@@ -2,13 +2,14 @@
 
 # Function input:
 
-# N: 
-# ni: 
-# beta: 
-# sdbinter: 
-# sdbslope: 
-# sdeps: 
-# type: 
+# N: number of clusters
+# ni: number of observations per cluster
+# beta: coefficients of the variables
+# sdbinter: standard deviation of the random intercepts
+# sdbslope: standard deviation of the random slope of variable x1
+# sdeps: standard deviation of the Gaussian noise
+# type: type of variables. Can be "norm" for normally distributed variables
+# and "bin" for binary variables (equal probability for each class)
 # fixed: 
 
 # Function output:
@@ -59,14 +60,15 @@ simuldata <- function(N=50, ni=5, beta=c(2, 0.7, 0), sdbinter=1, sdbslope=0, sde
 
 # Function input:
 
-# niter: 
-# N: 
-# ni: 
-# beta: 
-# sdbinter: 
-# sdbslope: 
-# sdeps: 
-# type: 
+# niter: number of simulation iterations
+# N: number of clusters
+# ni: number of observations per cluster
+# beta: coefficients of the variables
+# sdbinter: standard deviation of the random intercepts
+# sdbslope: standard deviation of the random slope of variable x3
+# sdeps: standard deviation of the Gaussian noise
+# type: type of variables. Can be "norm" for normally distributed variables
+# and "bin" for binary variables (equal probability for each class)
 # fixed: 
 
 # Function output:
