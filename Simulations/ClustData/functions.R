@@ -107,6 +107,6 @@ simulation <- function(niter, N, ni, beta, sdbinter, sdbslope, sdeps, type, fixe
     
   }
   result <- list(mse_subsamp0.8=mse_subsamp0.8, mse_subsamp0.8g=mse_subsamp0.8g)
-  save(result, file=paste("./Simulations/ClustData/Results/N", N, "ni", ni, "beta", paste(beta, collapse=""), "sdbinter", sdbinter, "sdbslope", sdbslope, "sdeps", sdeps, type, fixed, ".RData", sep=""))
+  save(result, file=paste("./Simulations/ClustData/Results/intermediate_results/N", N, "ni", ni, "beta", paste(beta, collapse=""), "sdbinter", sdbinter, "sdbslope", sdbslope, "sdeps", sdeps, type, fixed, ".RData", sep=""))
   
 }
