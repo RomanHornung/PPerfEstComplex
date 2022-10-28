@@ -20,11 +20,20 @@ simuldata <- function(n=500)
 
 
 
-maxnleaf <- 10
 
 
+# Function for randomly generating the tree structure:
 
-# KOMMENTIEREN!!!!!!!
+# Function input:
+
+# maxnleaf: The maximum number of leaf nodes; the tree is pruned
+# by one level as soon as the number of leaf nodes exceed 'maxnleaf'.
+
+# Function output:
+
+# A list representing the tree structure. More precisely, this list provides
+# for each node its child nodes. For example, a list entry "[[3]] 7 8" means
+# that node "3" has nodes "7" and "8" as child nodes.
 
 gen_tree_structure <- function(maxnleaf=20) { 
   
@@ -54,7 +63,6 @@ gen_tree_structure <- function(maxnleaf=20) {
   count <- count+1
   
   
-  
   while(nleaf <= maxnleaf) {
     
     for(i in leftnode:rightnode) {
@@ -81,79 +89,6 @@ gen_tree_structure <- function(maxnleaf=20) {
   
 }
 
-
-gen_tree_structure(2)
-
-
-nodelist
-
-
-leftnodes
-rightnodes
-
-nodelist
-
-
-nodelist
-
-
-
-
-nodelist
-
-
-
-
-
-
-leftnode
-rightnode
-
-nleaf
-
-
-for(i in leftnode:rightnode) {
-  numnodes <- sample(2:3, size=1, prob=c(2,1))
-  nodelist[[i]] <- max(nodelist[[i-1]]) + (1:numnodes)
-}
-
-leftnode <- min(nodelist[[leftnode]])
-rightnode <- max(nodelist[[rightnode]])
-
-nleaf <- rightnode-(leftnode-1)
-
-nleaf
-
-
-for(i in leftnode:rightnode) {
-  numnodes <- sample(2:3, size=1, prob=c(2,1))
-  nodelist[[i]] <- max(nodelist[[i-1]]) + (1:numnodes)
-}
-
-leftnode <- min(nodelist[[leftnode]])
-rightnode <- max(nodelist[[rightnode]])
-
-nleaf <- rightnode-(leftnode-1)
-
-nleaf
-
-
-
-
-nodelist
-
-
-count <- count + 1
-
-
-numnodes <- sample(2:3, size=1, prob=c(2,1))
-
-
-
-if(numnodes==2)
-  nodelist[[count]] <- 1:2
-if(numnodes==3)
-  nodelist[[1]] <- 1:3
 
 
 
