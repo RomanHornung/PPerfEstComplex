@@ -85,11 +85,67 @@ gen_tree_structure <- function(maxnleaf=20) {
   leftnodes[length(leftnodes)-2]
   nodelist <- nodelist[1:rightnodes[length(rightnodes)-2]]
   
-  return(nodelist)
+  return(list(nodelist=nodelist, leftnodes=leftnodes, rightnodes=rightnodes))
   
 }
 
+set.seed(123)
+ui <- gen_tree_structure(20)
 
+# ui$nodelist
+
+
+leftnodes <- 1
+count <- 1
+
+while(leftnodes[count] <= length(ui$nodelist)) {
+  leftnodes[count+1] <- ui$nodelist[[leftnodes[count]]][1]
+  count <- count+1
+}
+leftnodes
+
+rightnodes <- c(1, leftnodes[-(1:2)]-1, max(ui$nodelist[[length(ui$nodelist)]]))
+
+leftnodes
+rightnodes
+
+leftnodes[length(leftnodes)]:rightnodes[length(leftnodes)]
+
+
+
+
+
+
+ui$leftnodes
+ui$rightnodes
+
+
+
+i<-2
+leftnodes[i+1] <- ui$nodelist[[leftnodes[i]]][1]
+
+i<-3
+leftnodes[i+1] <- ui$nodelist[[leftnodes[i]]][1]
+
+i<-4
+leftnodes[i+1] <- ui$nodelist[[leftnodes[i]]][1]
+
+
+
+
+leftnodes
+
+leftnodes
+
+leftnodetemp <- leftnodes[]
+
+leftnodetemp <- leftnodes[1]
+leftnodetemp <- ui$nodelist[[leftnodetemp]][1]
+leftnodes[2] <- ui$nodelist[[leftnodetemp]][1]
+
+1
+  ui$nodelist[[1]][1]
+  ui$nodelist[[ui$nodelist[[1]][1]]][1]
 
 
 # Function for performing the simulation for a specific setting.
