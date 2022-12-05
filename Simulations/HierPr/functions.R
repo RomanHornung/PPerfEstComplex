@@ -82,70 +82,106 @@ gen_tree_structure <- function(maxnleaf=20) {
     
   }
   
-  leftnodes[length(leftnodes)-2]
   nodelist <- nodelist[1:rightnodes[length(rightnodes)-2]]
   
+  nlayer <- length(leftnodes)
+  leftnodes <- leftnodes[-nlayer]
+  rightnodes <- rightnodes[-nlayer]
+
   return(list(nodelist=nodelist, leftnodes=leftnodes, rightnodes=rightnodes))
   
 }
 
-set.seed(123)
-ui <- gen_tree_structure(20)
-
-# ui$nodelist
 
 
-leftnodes <- 1
-count <- 1
 
-while(leftnodes[count] <= length(ui$nodelist)) {
-  leftnodes[count+1] <- ui$nodelist[[leftnodes[count]]][1]
-  count <- count+1
+
+# Function for plotting the tree structure:
+
+# Function input:
+
+# x: Output of gen_tree_structure()
+
+# Function output:
+
+# A ggplot2 plot of the tree structure.
+
+plot_structure <- function(x) {
+  
+  require("ggplot2")
+  require("ggforce")
+  
+  # Calculate the dimension of the plot:
+  xw <- 1.5*(x$rightnodes[length(x$rightnodes)] - x$leftnodes[length(x$leftnodes)]) + 1
+  xh <- 1.5*(length(x$leftnodes)-1) + 1
+  
+  
+  # Calculate the positions of the circles and the start and end points of the lines
+  # connecting the hierarchy:
+  
+  # Positions of the points:
+  x0list <- y0list <- namelist <- list()
+  
+  # Start and end points of the lines:
+  xyllist <- list() 
+  
+  x0list[[1]] <- 0.5 + 1.5*(0:(x$rightnodes[length(x$rightnodes)] - x$leftnodes[length(x$leftnodes)]))
+  y0list[[1]] <- rep(0.5, length(x0list[[1]]))
+  namelist[[1]] <- x$leftnodes[length(x$leftnodes)]:x$rightnodes[length(x$rightnodes)]
+  
+  for(count in 2:length(x$leftnodes)) {
+    
+    tempobj <- sapply(namelist[[count-1]], function(x1) which(sapply(x$nodelist, function(y1) x1 %in% y1)))
+    namelist[[count]] <- unique(tempobj)
+    x0list[[count]] <- tapply(x0list[[count-1]], tempobj, mean)
+    y0list[[count]] <- rep(y0list[[count-1]][1] + 1.5, length(namelist[[count]]))
+    
+    tempnodes <- x$leftnodes[length(x$leftnodes)-count+1]:x$rightnodes[length(x$leftnodes)-count+1]
+    
+    xltemp <- c(x0list[[count-1]], x0list[[count]][sapply(tempobj, function(x) which(namelist[[count]]==x))])
+    yltemp <- c(y0list[[count-1]] + 0.5, rep(y0list[[count]][1], length(namelist[[count-1]])) - 0.5)
+    grouptemp <- rep(1:length(x0list[[count-1]]), 2)
+    
+    dftemp <- data.frame(xl=xltemp, yl=yltemp, group=grouptemp)
+    
+    if(count > 2)
+      dftemp$group <- dftemp$group + xyllist[[count-2]]$group[length(xyllist[[count-2]]$group)]
+    
+    xyllist[[count-1]] <- dftemp
+    
+  }
+  
+  xyldf <- do.call("rbind", xyllist)
+  xypdf <- data.frame(x0=unlist(x0list), y0=unlist(y0list), nam=unlist(namelist))
+  
+  
+  # Make the ggplot2 plot (for 'geom_circle' the package 'ggforce' is required):
+  
+  p <- ggplot(data=xypdf) + geom_circle(aes(x0=x0, y0=y0, r=0.5)) + theme_bw() +
+    geom_text(aes(x=x0, y=y0, label=nam)) +
+    
+    geom_line(data=xyldf,
+              aes(x=xl, y=yl, group=group)) +
+    theme(axis.line=element_blank(),
+          axis.text.x=element_blank(),
+          axis.text.y=element_blank(),
+          axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),
+          legend.position="none",
+          panel.background=element_blank(),
+          panel.border=element_blank(),
+          panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),
+          plot.background=element_blank())
+  p
+  
 }
-leftnodes
-
-rightnodes <- c(1, leftnodes[-(1:2)]-1, max(ui$nodelist[[length(ui$nodelist)]]))
-
-leftnodes
-rightnodes
-
-leftnodes[length(leftnodes)]:rightnodes[length(leftnodes)]
 
 
 
 
 
-
-ui$leftnodes
-ui$rightnodes
-
-
-
-i<-2
-leftnodes[i+1] <- ui$nodelist[[leftnodes[i]]][1]
-
-i<-3
-leftnodes[i+1] <- ui$nodelist[[leftnodes[i]]][1]
-
-i<-4
-leftnodes[i+1] <- ui$nodelist[[leftnodes[i]]][1]
-
-
-
-
-leftnodes
-
-leftnodes
-
-leftnodetemp <- leftnodes[]
-
-leftnodetemp <- leftnodes[1]
-leftnodetemp <- ui$nodelist[[leftnodetemp]][1]
-leftnodes[2] <- ui$nodelist[[leftnodetemp]][1]
-
-1
-  ui$nodelist[[1]][1]
-  ui$nodelist[[ui$nodelist[[1]][1]]][1]
 
 
 # Function for performing the simulation for a specific setting.
