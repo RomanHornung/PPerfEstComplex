@@ -3,6 +3,11 @@ setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 source("./simulations/hierpr/functions.R")
 
+
+# Generate the tree structure:
+
+# Keep generating new tree structures until a tree structure
+# with exactly 50 leaf nodes results:
 nleaf <- 0
 count <- 0
 
@@ -24,15 +29,12 @@ sum(sapply(1:length(treestruc$leftnodes), function(x) treestruc$rightnodes[x] - 
 
 
 
+
+
 # -	Erster Schritt ist die hierarchische Baumstruktur festlegen.
 # -	Jeder interne Knoten ist mit einem lokalen Modell verknüpft, wobei die Unterscheidbarkeit der Klassen geringer werden soll, je weiter unten man in der hierarchischen Struktur ankommt. Das wird realisiert in dem das Rauschen (epsilon) immer weiter vergrößert wird, je weiter man nach unten kommt.
 # -	Dass die Koeffizienten von vertikal benachbarten Schichten sich ähnlich sind, wird so realisiert, dass die Koeffizenten aus Normalverteilungen mit Mittelwerten gleich den Koeffizienten der darüberliegenden Schichten gezogen werden.
 
-
-
-# covariate matrix
-
-n <- 50000
 
 
 
@@ -41,6 +43,8 @@ n <- 50000
 # die degrees der klassenungleichheiten nicht voneinander abhägne sollen.
 
 
+
+n <- 50000
 
 # erster coefficent intercept, rest sind die beeinflussenden betas:
 vCoef1 = rep(0, 6)
@@ -80,16 +84,30 @@ vCoef3
 
 
 
-treestruc
+
+load("./simulations/hierpr/results/intermediate_results/treestruc.Rda")
+
+
+
+# Make a list which will contain the coefficients of the simulation models
+# and other information:
+
+
+
+# treestruc
 
 coeflist <- vector(mode = "list", length = length(treestruc$nodelist))
 for(i in seq(along=coeflist)) {
   coeflist[[i]] <- list()
-  coeflist[[i]][[1]] <- treestruc$nodelist[[i]]
   
-  coeflist[[i]][[2]] <- which(sapply(1:length(treestruc$leftnodes), function(x) (i >= treestruc$leftnodes[x]) & (i <= treestruc$rightnodes[x])))
+  # Add the information on the child nodes for each node:
+  coeflist[[i]]$childnodes <- treestruc$nodelist[[i]]
   
-  names(coeflist[[i]]) <- c("childnodes", "layer")
+  # Add the information on the parent nodes for each node:
+  coeflist[[i]]$parentnodes <- which(sapply(1:length(coeflist), function(x) i %in% coeflist[[x]]$childnodes))
+  
+  # Add the layer of each node:
+  coeflist[[i]]$layer <- which(sapply(1:length(treestruc$leftnodes), function(x) (i >= treestruc$leftnodes[x]) & (i <= treestruc$rightnodes[x])))
   
 }
 
@@ -98,21 +116,18 @@ for(i in seq(along=coeflist)) {
 
 
 
-treestruc$leftnodes
-treestruc$rightnodes
 
 
-vCoef1 = rep(0, 6)
-vCoef2 = rnorm(6)
-vCoef3 = rnorm(6)
 
+# Simulate the coefficients:
 
-vCoef2 = rnorm(6)
-vCoef3 = rnorm(6)
+set.seed(1234)
 
-
+# Variance of the normal distribution from which the intercepts are drawn:
 sdbeta0 <- sqrt(1)
-sdbeta <- sqrt(c(1, 1.5, 2, 2.5))
+
+# The betas have layer-specific variances:
+sdbeta <- sqrt(c(1, 1.5, 2, 2.5, 3))
 
 
 maxlayer <- max(sapply(coeflist, function(x) x$layer))
@@ -120,9 +135,9 @@ maxlayer <- max(sapply(coeflist, function(x) x$layer))
 
 for(i in seq(along=coeflist)) {
   
-  if(coeflist[[i]]$layer==maxlayer) {
-    coeflist[[i]]$coefs <- NA
-  } else {
+  # if(coeflist[[i]]$layer==maxlayer) {
+  #   coeflist[[i]]$coefs <- NA
+  # } else {
     
     if(length(coeflist[[i]]$childnodes)==2) {
       coefs <- matrix(nrow=1, ncol=6, data=c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
@@ -134,13 +149,18 @@ for(i in seq(along=coeflist)) {
     
     coeflist[[i]]$coefs <- coefs
     
-  }
+  # }
   
 }
   
 
 
 
+
+# Function that takes the covariate matrix of the subset of observations
+# contained in a node and the coefficients associated with that node
+# to output the indices of the child nodes to which the observations
+# get assigned to.
 
 get_child_nodes <- function(Xsub, coefs) {
   
@@ -168,11 +188,33 @@ n <- 5000
 X <- matrix(nrow=n, ncol=5, rnorm(n*5))
 
 
-coeflist[[1]]
 
 
+# innerclasses
 
-length(treestruc$nodelist)
+
+tempclass <- coeflist[[1]]$childnodes[get_child_nodes(X, coeflist[[1]]$coefs)]
+
+outcomemat[,1] <- tempclass
+
+head(outcomemat)
+#asdf
+coeflist[[1]]$datanode <- data.frame(X)
+coeflist[[1]]$datanode$y <- factor(tempclass)
+
+#asdf
+for(i in 2:(length(coeflist)-1)) {
+
+subs <- outcomemat[,coeflist[[i]]$layer-1]==i
+tempclass <- coeflist[[i]]$childnodes[get_child_nodes(X[subs,], coeflist[[i]]$coefs)]
+
+outcomemat[subs,coeflist[[i]]$layer] <- tempclass
+
+coeflist[[i]]$datanode <- data.frame(X[subs,])
+coeflist[[i]]$datanode$y <- factor(tempclass)
+
+}
 
 
-# Here mChoices and dfM$y encode the same information differently.
+length(table(outcomemat[,5]))
+barplot(table(outcomemat[,5]))
