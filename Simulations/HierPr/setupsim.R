@@ -89,70 +89,65 @@ load("./simulations/hierpr/results/intermediate_results/treestruc.Rda")
 
 
 
-# Make a list which will contain the coefficients of the simulation models
-# and other information:
 
 
+
+# Variance of the normal distribution from which the intercepts are drawn:
+# sdbeta0 <- sqrt(1)
+
+# The betas have layer-specific variances:
+# sdbeta <- sqrt(c(1, 1.5, 2, 2.5, 3))
 
 # treestruc
 
-coeflist <- vector(mode = "list", length = length(treestruc$nodelist))
-for(i in seq(along=coeflist)) {
-  coeflist[[i]] <- list()
+simulate_coefs <- function(treestruc, sdbeta0=sqrt(1),
+                           sdbeta=sqrt(c(1, 1.5, 2, 2.5, 3))) {
   
-  # Add the information on the child nodes for each node:
-  coeflist[[i]]$childnodes <- treestruc$nodelist[[i]]
   
-  # Add the information on the parent nodes for each node:
-  coeflist[[i]]$parentnodes <- which(sapply(1:length(coeflist), function(x) i %in% coeflist[[x]]$childnodes))
+  coeflist <- vector(mode = "list", length = length(treestruc$nodelist))
+  for(i in seq(along=coeflist)) {
+    coeflist[[i]] <- list()
+    
+    # Add the information on the child nodes for each node:
+    coeflist[[i]]$childnodes <- treestruc$nodelist[[i]]
+    
+    # Add the information on the parent nodes for each node:
+    coeflist[[i]]$parentnodes <- which(sapply(1:length(coeflist), function(x) i %in% coeflist[[x]]$childnodes))
+    
+    # Add the layer of each node:
+    coeflist[[i]]$layer <- which(sapply(1:length(treestruc$leftnodes), function(x) (i >= treestruc$leftnodes[x]) & (i <= treestruc$rightnodes[x])))
+    
+  }
   
-  # Add the layer of each node:
-  coeflist[[i]]$layer <- which(sapply(1:length(treestruc$leftnodes), function(x) (i >= treestruc$leftnodes[x]) & (i <= treestruc$rightnodes[x])))
   
-}
-
-
-
-
-
-
-
-
-
-# Simulate the coefficients:
-
-set.seed(1234)
-
-# Variance of the normal distribution from which the intercepts are drawn:
-sdbeta0 <- sqrt(1)
-
-# The betas have layer-specific variances:
-sdbeta <- sqrt(c(1, 1.5, 2, 2.5, 3))
-
-
-maxlayer <- max(sapply(coeflist, function(x) x$layer))
-
-
-for(i in seq(along=coeflist)) {
+  # Simulate the coefficients:
   
-  # if(coeflist[[i]]$layer==maxlayer) {
-  #   coeflist[[i]]$coefs <- NA
-  # } else {
+  maxlayer <- max(sapply(coeflist, function(x) x$layer))
+  
+  
+  for(i in seq(along=coeflist)) {
+    
+    # if(coeflist[[i]]$layer==maxlayer) {
+    #   coeflist[[i]]$coefs <- NA
+    # } else {
     
     if(length(coeflist[[i]]$childnodes)==2) {
       coefs <- matrix(nrow=1, ncol=6, data=c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
     }
     if(length(coeflist[[i]]$childnodes)==3) {
       coefs <- rbind(c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])),
-                       c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
+                     c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
     }
     
     coeflist[[i]]$coefs <- coefs
     
-  # }
+    # }
+    
+  }
+  
+  return(coeflist)
   
 }
-  
 
 
 
@@ -192,29 +187,52 @@ X <- matrix(nrow=n, ncol=5, rnorm(n*5))
 
 # innerclasses
 
+set.seed(1234)
+
+#asdf
+
+coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                           sdbeta=sqrt(c(1, 1.5, 2, 2.5, 3)))
+
+
+
+# NAECHSTER SCHRITT: SCHAUEN, OB DIE SIMULATIONSPARAMETER PASSEN,
+# INDEM GESCHAUT WIRD WIR GUT DIE MODELLE IN DEN EINZELNEN KNOTEN
+# SIND UND AUCH WIE UNGLEICH GROS DIE ENDKNOTEN SIND (VIELLEICHT DAS AUCH
+# VISUALIIEREN).
+# NATÜRLICH AUCH HIERCLASS DRÜBER LAUFEN LASSEN, UM ZU SEHEN, WIE
+# GUT DIE PRÄDIKTION FUNKTIONIERT.
+
+
+
+maxlayer <- max(sapply(coeflist, function(x) x$layer))
+
+outcomemat <- matrix(nrow=nrow(X), ncol=maxlayer)
+
 
 tempclass <- coeflist[[1]]$childnodes[get_child_nodes(X, coeflist[[1]]$coefs)]
 
 outcomemat[,1] <- tempclass
 
-head(outcomemat)
-#asdf
 coeflist[[1]]$datanode <- data.frame(X)
 coeflist[[1]]$datanode$y <- factor(tempclass)
 
-#asdf
+
+
 for(i in 2:(length(coeflist)-1)) {
-
-subs <- outcomemat[,coeflist[[i]]$layer-1]==i
-tempclass <- coeflist[[i]]$childnodes[get_child_nodes(X[subs,], coeflist[[i]]$coefs)]
-
-outcomemat[subs,coeflist[[i]]$layer] <- tempclass
-
-coeflist[[i]]$datanode <- data.frame(X[subs,])
-coeflist[[i]]$datanode$y <- factor(tempclass)
-
+  
+  subs <- outcomemat[,coeflist[[i]]$layer-1]==i
+  tempclass <- coeflist[[i]]$childnodes[get_child_nodes(X[subs,], coeflist[[i]]$coefs)]
+  
+  outcomemat[subs,coeflist[[i]]$layer] <- tempclass
+  
+  coeflist[[i]]$datanode <- data.frame(X[subs,])
+  coeflist[[i]]$datanode$y <- factor(tempclass)
+  
 }
 
+
+# fix(outcomemat)
 
 length(table(outcomemat[,5]))
 barplot(table(outcomemat[,5]))
