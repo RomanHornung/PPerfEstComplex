@@ -65,19 +65,20 @@ as.numeric(difftime(ti2, ti1, unit="secs"))
 
 
 boxplot(c(casefirstrf1, casefirstrf1_2))
+boxplot(c(casefirstrf2, casefirstrf2_2))
 
 
 
 
 ti1 <- Sys.time()
 set.seed(123456)
-casefirstrf1_2 <- simulation(niter=10, N=10, ni=25, beta=c(2, 0, 0), sdbinter=1, sdbslope=0, sdeps=0.7, fixed="first", method="rf")
+casefirstrf1_2 <- simulation(niter=10, N=10, ni=25, beta=c(2, 0, 0), sdbinter=1, sdbslope=0, sdeps=0.5, fixed="first", method="rf")
 ti2 <- Sys.time()
 as.numeric(difftime(ti2, ti1, unit="secs"))
 
 ti1 <- Sys.time()
 set.seed(123456)
-casefirstrf2_2 <- simulation(niter=10, N=10, ni=25, beta=c(1, 1, -1, 0, 0), sdbinter=1, sdbslope=0, sdeps=0.7, fixed="first", method="rf")
+casefirstrf2_2 <- simulation(niter=10, N=10, ni=25, beta=c(1, 1, -1, 0, 0), sdbinter=1, sdbslope=0, sdeps=0.5, fixed="first", method="rf")
 ti2 <- Sys.time()
 as.numeric(difftime(ti2, ti1, unit="secs"))
 
@@ -138,7 +139,7 @@ cor(simdataperm$y, ypredsrf)
 
 
 
-simdata <- simuldata(N=10, ni=25, beta=c(1, 1, -1, 0, 0), sdbinter=1, sdbslope=0, sdeps=1, fixed="first")$dataset
+simdata <- simuldata(N=10, ni=25, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, fixed="first")$dataset
 ypredsrf <- rep(NA, nrow(simdata))
 
 for(i in seq(along=unique(simdata$index))) {
