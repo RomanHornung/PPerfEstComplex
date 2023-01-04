@@ -1,73 +1,69 @@
-# setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+# Set working directory:
 
-# Source the functions necessary for the simulation:
-
-source("./Simulations/ClustData/functions.R")
+setwd("~/PPerfEstComplex")
 
 
 
-# Perform the simulation:
+# Make table of settings:
+
+scenariogrid <- expand.grid(iter=1:100, fixed=c("none", "first", "second"), sdeps=c(1,0.5), sdbslope=c(1,0), sdbinter=c(1,0), ni=c(5,25), N=c(10,50), stringsAsFactors = TRUE)
+scenariogrid <- scenariogrid[,ncol(scenariogrid):1, drop=FALSE]
 
 set.seed(1234)
+seeds <- sample(1000:10000000, size=nrow(scenariogrid))
 
-simulation(niter=100, N=10, ni=5, beta=c(2, 0, 0), sdbinter=1, sdbslope=2, sdeps=1, type="norm", fixed=FALSE)
-simulation(niter=100, N=10, ni=5, beta=c(2, 0, 0), sdbinter=1, sdbslope=0, sdeps=1, type="norm", fixed=FALSE)
-
-simulation(niter=100, N=50, ni=5, beta=c(2, 0, 0), sdbinter=1, sdbslope=2, sdeps=1, type="norm", fixed=FALSE)
-simulation(niter=100, N=50, ni=5, beta=c(2, 0, 0), sdbinter=1, sdbslope=0, sdeps=1, type="norm", fixed=FALSE)
-
-simulation(niter=100, N=10, ni=25, beta=c(2, 0, 0), sdbinter=1, sdbslope=2, sdeps=1, type="norm", fixed=FALSE)
-simulation(niter=100, N=10, ni=25, beta=c(2, 0, 0), sdbinter=1, sdbslope=0, sdeps=1, type="norm", fixed=FALSE)
-
-simulation(niter=100, N=10, ni=5, beta=c(2, 0, 0), sdbinter=0, sdbslope=2, sdeps=1, type="norm", fixed=FALSE)
-simulation(niter=100, N=10, ni=5, beta=c(2, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, type="norm", fixed=FALSE)
+scenariogrid$seed <- seeds
 
 
-simulation(niter=100, N=10, ni=5, beta=c(2, 0, 0), sdbinter=1, sdbslope=2, sdeps=1, type="norm", fixed=TRUE)
-simulation(niter=100, N=10, ni=5, beta=c(2, 0, 0), sdbinter=1, sdbslope=0, sdeps=1, type="norm", fixed=TRUE)
+set.seed(1234)
+reorderind <- sample(1:nrow(scenariogrid))
+scenariogrid <- scenariogrid[reorderind,,drop=FALSE]
+rownames(scenariogrid) <- NULL
 
-simulation(niter=100, N=50, ni=5, beta=c(2, 0, 0), sdbinter=1, sdbslope=2, sdeps=1, type="norm", fixed=TRUE)
-simulation(niter=100, N=50, ni=5, beta=c(2, 0, 0), sdbinter=1, sdbslope=0, sdeps=1, type="norm", fixed=TRUE)
 
-simulation(niter=100, N=10, ni=25, beta=c(2, 0, 0), sdbinter=1, sdbslope=2, sdeps=1, type="norm", fixed=TRUE)
-simulation(niter=100, N=10, ni=25, beta=c(2, 0, 0), sdbinter=1, sdbslope=0, sdeps=1, type="norm", fixed=TRUE)
 
-simulation(niter=100, N=10, ni=5, beta=c(2, 0, 0), sdbinter=0, sdbslope=2, sdeps=1, type="norm", fixed=TRUE)
-simulation(niter=100, N=10, ni=5, beta=c(2, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, type="norm", fixed=TRUE)
+# Save scenariogrid, needed in evaluation of the results:
+
+save(scenariogrid, file="./simulations/clustdata/results/intermediate_results/scenariogrid.Rda")
 
 
 
 
-rm(list=ls());gc()
+# Source the functions that are used in performing the calculations 
+# on the cluster:
 
-allfiles <- list.files("./Simulations/ClustData/Results")
-allfiles
-
-stump <- gsub("TRUE.RData", "", grep("TRUE", allfiles, value=TRUE))
-
-stumptrue <- paste0(stump, "TRUE.RData")
-stumpfalse <- paste0(stump, "FALSE.RData")
-
-stumptrue
-stumpfalse
-
-ls()
-
-pdf("./Simulations/ClustData/Results/figures/comparison.pdf", width=7, height=30)
-par(mfrow=c(length(stumpfalse),2))
-for(i in 1:length(stumpfalse)) {
-
-load(paste0("./Simulations/ClustData/Results/intermediate_results/", stumpfalse[i]))
-resultfalse <- result
-load(paste0("./Simulations/ClustData/Results/intermediate_results/", stumptrue[i]))
-resulttrue <- result
+source("./simulations/clustdata/functions.R")
 
 
-boxplot(resultfalse$mse_subsamp0.8, resultfalse$mse_subsamp0.8g, main=stump[i])
-boxplot(resulttrue$mse_subsamp0.8, resulttrue$mse_subsamp0.8g)
+
+# Start the cluster:
+
+# NOTE: This syntax requires the use of the RMPISNOW script, see the README file
+# contained in the root folder "PPerfEstComplex".
+
+cl <- makeCluster()
 
 
-# Sys.sleep(1)
-}
-par(mfrow=c(1,1))
-dev.off()
+
+# Export the objects in the workspace to the
+# parallel jobs:
+
+clusterExport(cl, list=ls())
+
+
+
+# Perform the calculations and save the results (saving is performed within 'evaluatesetting'):
+
+results <- parLapply(cl, 1:nrow(scenariogrid), function(z)
+  try({evaluatesetting(z)}))
+
+  
+
+# Save the results:  
+  
+save(results, file="./simulations/clustdata/results/intermediate_results/results.Rda")  
+  
+  
+# Stop the cluster:
+
+stopCluster(cl)
