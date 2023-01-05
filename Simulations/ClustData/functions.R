@@ -1,3 +1,42 @@
+# This function performs one repetition of the five times repeated 
+# 5-fold stratified cross-validation on a specific data set using
+# one of the fives compared methods.
+#
+# It takes the whole number 'iter', which corresponds to the iter-th line 
+# of 'scenariogrid', which contains the necessary information
+# on the iter-th setting.
+
+evaluatesetting <- function(iter) {
+  
+  # Obtain information for the iter-th setting:
+  
+N <- scenariogrid$N[iter] 
+ni <- scenariogrid$ni[iter] 
+sdbinter <- scenariogrid$sdbinter[iter] 
+sdbslope <- scenariogrid$sdbslope[iter] 
+sdeps <- scenariogrid$sdeps[iter] 
+fixed <- scenariogrid$fixed[iter] 
+iter <- scenariogrid$iter[iter] 
+seed <- scenariogrid$seed[iter] 
+  
+  # Set seed:
+  
+  set.seed(seed)
+  
+  result <- simulation(niter=1, N=N, ni=ni, beta=c(1, 1, -1, 0, 0), sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed, method="rf")
+  
+  # Save results:
+  
+  return(result)
+}
+
+
+
+
+
+
+
+
 # Function for simulating the datasets.
 
 # Function input:
@@ -16,41 +55,30 @@
 
 # A data.frame containing the simulated data.
 
-simuldata <- function(N=50, ni=5, beta=c(2, 0.7, 0), sdbinter=1, sdbslope=0, sdeps=1, type="norm", fixed=TRUE)
+simuldata <- function(N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, fixed=c("none", "first", "second"))
 {
-  p <- length(beta)
-  if (fixed==TRUE)
-  {
-    if (type=="norm")
-    {
-      x <- matrix(rnorm(N*p), N, p) 
-    }
-    if (type=="bin")
-    {
-      x <- matrix(rbinom(N*p, 1, 0.5), N, p) 
-    }
-    x <- x[rep(1:N, each=ni), ]  
-  }
   
-  if (fixed==FALSE)
-  {
-    if (type=="norm")
-    {
-      x <- matrix(rnorm(N*ni*p), N*ni, p) 
-    }
-    if (type=="bin")
-    {
-      x <- matrix(rbinom(N*p*ni, 1, 0.5), N*ni, p) 
-    }
-  }
+  p <- length(beta)
+  
+  x <- matrix(rnorm(N*ni*p), N*ni, p)
   
   index <- rep(1:N, each=ni)
+  
+if (fixed=="first")
+    x[, 1] <- rnorm(N)[index]
+  if (fixed=="second")
+    x[, 2] <- rnorm(N)[index]
+
   b <- rep(rnorm(N, sd=sdbinter), each=ni)
   b2 <- rep(rnorm(N, sd=sdbslope), each=ni)
   eps <- rnorm(N*ni, sd=sdeps)
   
   y <- x%*%beta + b + x[, 1]*b2 + eps
-  return(data.frame(index=index, b=b, y=y, x))
+  
+  dataset <- data.frame(y=y, x=x, index=index)
+  
+  return(list(dataset=dataset, b=b, b2=b2))
+  
 }
 
 
@@ -78,35 +106,44 @@ simuldata <- function(N=50, ni=5, beta=c(2, 0.7, 0), sdbinter=1, sdbslope=0, sde
 
 # A data.frame containing the simulated data.
 
-simulation <- function(niter, N, ni, beta, sdbinter, sdbslope, sdeps, type, fixed)
+simulation <- function(niter, N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, fixed=c("none", "first", "second"), method="lm")
 {
   
   require("mlr3")
   require("mlr3verse")
   require("data.table")
   
-  mse_subsamp0.8 <- numeric(niter)
-  mse_subsamp0.8g <- numeric(niter)
-  learner_linreg <- lrn("regr.lm")
+  mse_cv3 <- numeric(niter)
+  mse_cv3g <- numeric(niter)
+  if (method=="lm")
+  learner_temp <- lrn("regr.lm")
+  if (method=="rf")
+  learner_temp <- lrn("regr.ranger")
+  
+  # set_threads(learner_temp, n = 1)
+  
+  lgr::get_logger("mlr3")$set_threshold("warn")
   
   for (i in 1:niter)
   {
-    print(i)
-    simuldati <- simuldata(N=N, ni=ni, beta=beta, sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, type=type, fixed=fixed)[, -2]
+    # print(i)
+    simuldati <- simuldata(N=N, ni=ni, beta=beta, sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed)$dataset
     task_i <- as_task_regr(simuldati, target="y")
     task_i$set_col_roles(cols="index", remove_from="feature")
-    subsamp0.8 <- rsmp("subsampling", repeats = 100, ratio = 0.8)
-    subsamp0.8$instantiate(task_i)
-    result_subsamp0.8 <- resample(task=task_i, learner=learner_linreg, resampling=subsamp0.8)
-    mse_subsamp0.8[i] <- result_subsamp0.8$aggregate(msr("regr.mse"))
+    # subsamp0.8 <- rsmp("subsampling", repeats = 100, ratio = 0.8)
+    cv3 <- rsmp("repeated_cv", repeats = 10, folds = 3)
+    cv3$instantiate(task_i)
+    result_cv3 <- resample(task=task_i, learner=learner_temp, resampling=cv3)
+    mse_cv3[i] <- result_cv3$aggregate(msr("regr.mse"))
     
     task_i$col_roles$group = "index"
-    subsamp0.8$instantiate(task_i)
-    result_subsamp0.8g <- resample(task=task_i, learner=learner_linreg, resampling=subsamp0.8)
-    mse_subsamp0.8g[i] <- result_subsamp0.8g$aggregate(msr("regr.mse"))
+    cv3$instantiate(task_i)
+    result_cv3g <- resample(task=task_i, learner=learner_temp, resampling=cv3)
+    mse_cv3g[i] <- result_cv3g$aggregate(msr("regr.mse"))
     
   }
-  result <- list(mse_subsamp0.8=mse_subsamp0.8, mse_subsamp0.8g=mse_subsamp0.8g)
-  save(result, file=paste("./Simulations/ClustData/Results/intermediate_results/N", N, "ni", ni, "beta", paste(beta, collapse=""), "sdbinter", sdbinter, "sdbslope", sdbslope, "sdeps", sdeps, type, fixed, ".RData", sep=""))
+  result <- list(mse_cv3=mse_cv3, mse_cv3g=mse_cv3g)
+  return(result)
+  # save(result, file=paste("./Simulations/ClustData/Results/intermediate_results/N", N, "ni", ni, "beta", paste(beta, collapse=""), "sdbinter", sdbinter, "sdbslope", sdbslope, "sdeps", sdeps, fixed, ".RData", sep=""))
   
 }

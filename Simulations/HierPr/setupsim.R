@@ -10,6 +10,7 @@ if (FALSE) {
 
   # Keep generating new tree structures until a tree structure
   # with exactly 50 leaf nodes results:
+  
   nleaf <- 0
   count <- 0
 
@@ -94,20 +95,37 @@ load("./simulations/hierpr/results/intermediate_results/treestruc.Rda")
 
 
 
-# Variance of the normal distribution from which the intercepts are drawn:
-# sdbeta0 <- sqrt(1)
+# Function to simulate the coefficients:
 
-# The betas have layer-specific variances:
-# sdbeta <- sqrt(c(1, 1.5, 2, 2.5, 3))
 
-# treestruc
+# Function input:
+
+# treestruc: A list. The tree structure.
+# sdbeta0: The standard deviation of the normal distribution from which
+# the intercepts are drawn.
+# sdbeta: The standard deviation of the normal distribution from which
+# the coefficients are drawn. These depend on the layer of the tree because
+# lower tree layers should feature less predictive signal.
+
+# Function output:
+
+# A list containing, for each internal node the coefs to be used in the
+# simulation, the child nodes, the parent nodes, and the layer of each node.
 
 simulate_coefs <- function(treestruc, sdbeta0=sqrt(1),
-                           sdbeta=sqrt(c(1, 1.5, 2, 2.5, 3))) {
+                           sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5))) {
 
-
+  # Make a list that will contain the simulated coefficients as well as
+  # information on the tree structure (specifying the position of the
+  # node in the trees):
+  
   coeflist <- vector(mode = "list", length = length(treestruc$nodelist))
+  
+  
+  # Add the information on the tree structure:
+  
   for(i in seq(along=coeflist)) {
+    
     coeflist[[i]] <- list()
 
     # Add the information on the child nodes for each node:
@@ -121,29 +139,21 @@ simulate_coefs <- function(treestruc, sdbeta0=sqrt(1),
 
   }
 
-
   # Simulate the coefficients:
-
-  maxlayer <- max(sapply(coeflist, function(x) x$layer))
-
 
   for(i in seq(along=coeflist)) {
 
-    # if(coeflist[[i]]$layer==maxlayer) {
-    #   coeflist[[i]]$coefs <- NA
-    # } else {
-
+    # If the node has only two child nodes, we need only one set of coefficients:
     if(length(coeflist[[i]]$childnodes)==2) {
       coefs <- matrix(nrow=1, ncol=6, data=c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
     }
+    # If the node has three child nodes, we need two sets of coefficients:
     if(length(coeflist[[i]]$childnodes)==3) {
       coefs <- rbind(c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])),
                      c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
     }
 
     coeflist[[i]]$coefs <- coefs
-
-    # }
 
   }
 
@@ -158,9 +168,24 @@ simulate_coefs <- function(treestruc, sdbeta0=sqrt(1),
 # contained in a node and the coefficients associated with that node
 # to output the indices of the child nodes to which the observations
 # get assigned to.
+# Note that the assignments are performed according to a multinomial
+# regression model.
+
+
+# Function input:
+
+# Xsub: The matrix of observations in the current node. Observations in
+# rows and variables in columns.
+# coefs: The matrix of coefficients associated with the current node.
+
+# Function output:
+
+# A vector that gives the index of the child node for each observation.
 
 get_child_nodes <- function(Xsub, coefs) {
 
+  # Determine the (unstandardized) probabilities for each child node:
+  
   desmat <- cbind(1, Xsub)
 
   if (nrow(coefs)==2)
@@ -168,7 +193,14 @@ get_child_nodes <- function(Xsub, coefs) {
   else
     vProb <- cbind(1, exp(desmat%*%coefs[1,]))
 
+  # Draw the child nodes based on the probabilities obtained in the
+  # first step:
+  
   mChoices <- t(apply(vProb, 1, rmultinom, n = 1, size = 1))
+  
+  
+  # Make a vector of the child node indices:
+  
   ys <- apply(mChoices, 1, function(x) which(x==1))
 
   return(ys)
@@ -181,39 +213,75 @@ get_child_nodes <- function(Xsub, coefs) {
 
 
 
+# Function to simulate the data:
+
+
+# Function input:
+
+# n: Number of observations to simulate.
+# coeflist: Result of simulate_coefs. A list that the coefs to be used in the
+# simulation as well as other information about the tree structure.
+
+# Function output:
+
+# A list containing the following:
+# data: The simulated data.frame.
+# coeflist: The input list 'coeflist' to which the simulated data associated
+# with each node was added.
+
 sim_data <- function(n, coeflist) {
 
+  # Simulate the covariate matrix:
+  
   X <- matrix(nrow=n, ncol=5, rnorm(n*5))
 
 
+  # Simulate the outcome:
+  
   maxlayer <- max(sapply(coeflist, function(x) x$layer))
 
+  # Outcome matrix with 5 columns, where the j-th column
+  # will contain the classes of the observations in the
+  # j-th layer:
   outcomemat <- matrix(nrow=nrow(X), ncol=maxlayer)
 
+  
+  # Assign the child node classes of the observations in the root node:
 
+  # Determine the child nodes of the root node:
   tempclass <- coeflist[[1]]$childnodes[get_child_nodes(X, coeflist[[1]]$coefs)]
 
+  # Assign these child node classes:
   outcomemat[,1] <- tempclass
 
+  # Store the data associated with the node also in 'coeflist':
   coeflist[[1]]$datanode <- data.frame(X)
   coeflist[[1]]$datanode$y <- factor(tempclass)
 
 
+  # Assign the child node classes of the observations in all other subsequent nodes:
 
   for(i in 2:length(coeflist)) {
 
+    # Determine the subset of observations that are in the i-th node:
     subs <- outcomemat[,coeflist[[i]]$layer-1]==i
+    
+    # Determine the child nodes for this subset of observations:
     tempclass <- coeflist[[i]]$childnodes[get_child_nodes(X[subs,], coeflist[[i]]$coefs)]
 
+    # Assign these child nodes to the corresponding rows in 'outcomemat':
     outcomemat[subs,coeflist[[i]]$layer] <- tempclass
 
+    # Store the data associated with the node also in 'coeflist':
     coeflist[[i]]$datanode <- data.frame(X[subs,])
     coeflist[[i]]$datanode$y <- factor(tempclass)
 
   }
 
+  # Bring the outcome into the format need by 'hierclass':
   ystring <- apply(outcomemat, 1, function(x) paste(x, collapse="."))
 
+  # Make the data.frame:
   data <- data.frame(X)
   data$y <- factor(ystring)
 
@@ -387,6 +455,10 @@ save(res1_s, res1_l, res2_s, res2_l, res3_s, res3_l, res4_s, res4_l, res5_s, res
      file="./Simulations/HierPr/results/intermediate_results/restrials.Rda")
 
 
+load("./Simulations/HierPr/results/intermediate_results/restrials.Rda")
+
+
+res5_l
 
 # Simulate a whole dataset:
 
