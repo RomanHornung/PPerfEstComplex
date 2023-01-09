@@ -1,4 +1,4 @@
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 # Load and pre-process the results:
@@ -52,32 +52,46 @@ resultsum <- ddply(results, .variables=c("fixed", "N", "n_i", "var_intercept", "
 
 
 
-# res <- resultsum[resultsum$fixed=="none",]
-# res$N_n_i <- paste0("N = ", res$N, ", n_i = ", res$n_i)
-# res$N_n_i <- factor(res$N_n_i, levels=c("N = 10, n_i = 5", "N = 10, n_i = 25", "N = 50, n_i = 5", "N = 50, n_i = 25"))
+# res <- resultsum[resultsum$fixed!="none",]
+# res$N_n_m <- paste0("N = ", res$N, ", n_m = ", res$n_i)
+# res$N_n_m <- factor(res$N_n_m, levels=c("N = 10, n_m = 5", "N = 10, n_m = 25", "N = 50, n_m = 5", "N = 50, n_m = 25"))
 # 
 # library("ggplot2")
-# p <- ggplot(data=res, aes(x=N_n_i, y=CV_err, color=type, group=type)) + theme_bw() +
-#   geom_line() + facet_wrap(~ var_intercept + var_slope + var_eps, labeller = label_both, ncol = 2) +
+# p <- ggplot(data=res, aes(x=as.numeric(N_n_m), y=CV_err)) + theme_bw() +
+#   geom_line(aes(color=type, linetype=fixed)) + facet_wrap(~ var_intercept + var_slope + var_eps, labeller = label_both, ncol = 2) +
 #   ylab("Mean cross-validation error") +
-#   theme(axis.title.x=element_blank(), 
-#         axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
-#         legend.position = "none")
+#   theme(axis.title.x=element_blank(),
+#         axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10))
 # p
 # 
-# ggsave("./Simulations/ClustData/Results/figures/MeanCV_none_fixed.pdf", width=7, height=9)
+# ggsave("./Simulations/ClustData/Results/figures/bla.pdf", width=7, height=9)
+# 
+# res <- resultsum#[resultsum$fixed!="none",]
+# res$N_n_m <- paste0("N = ", res$N, ", n_m = ", res$n_i)
+# res$N_n_m <- factor(res$N_n_m, levels=c("N = 10, n_m = 5", "N = 10, n_m = 25", "N = 50, n_m = 5", "N = 50, n_m = 25"))
+# 
+# library("ggplot2")
+# p <- ggplot(data=res, aes(x=as.numeric(N_n_m), y=CV_err)) + theme_bw() +
+#   geom_line(aes(color=type, linetype=fixed)) + facet_wrap(~ var_intercept + var_slope + var_eps, labeller = label_both, ncol = 2) +
+#   ylab("Mean cross-validation error") +
+#   theme(axis.title.x=element_blank(),
+#         axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10))
+# p
+# 
+# ggsave("./Simulations/ClustData/Results/figures/bla2.pdf", width=7, height=9)
+
 
 
 # PLOT DESCRIPTION:
 
 res <- results[results$fixed=="none",]
-res$N_n_i <- paste0("N = ", res$N, ", n_i = ", res$n_i)
-res$N_n_i <- factor(res$N_n_i, levels=c("N = 10, n_i = 5", "N = 10, n_i = 25", "N = 50, n_i = 5", "N = 50, n_i = 25"))
+res$N_n_i <- paste0("N = ", res$N, ", n_m = ", res$n_i)
+res$N_n_i <- factor(res$N_n_i, levels=c("N = 10, n_m = 5", "N = 10, n_m = 25", "N = 50, n_m = 5", "N = 50, n_m = 25"))
 
 library("ggplot2")
 p <- ggplot(data=res, aes(x=N_n_i, y=CV_err, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ var_intercept + var_slope + var_eps, labeller = label_both, ncol = 2, scales="free_y") +
-  ylab("Cross-validation error") +
+  ylab("Cross-validated MSE") +
   theme(axis.title.x=element_blank(), 
         axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         legend.position = "none")
@@ -87,13 +101,13 @@ ggsave("./Simulations/ClustData/Results/figures/cv_none_fixed.pdf", width=9, hei
 
 
 res <- results[results$fixed=="first",]
-res$N_n_i <- paste0("N = ", res$N, ", n_i = ", res$n_i)
-res$N_n_i <- factor(res$N_n_i, levels=c("N = 10, n_i = 5", "N = 10, n_i = 25", "N = 50, n_i = 5", "N = 50, n_i = 25"))
+res$N_n_i <- paste0("N = ", res$N, ", n_m = ", res$n_i)
+res$N_n_i <- factor(res$N_n_i, levels=c("N = 10, n_m = 5", "N = 10, n_m = 25", "N = 50, n_m = 5", "N = 50, n_m = 25"))
 
 library("ggplot2")
 p <- ggplot(data=res, aes(x=N_n_i, y=CV_err, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ var_intercept + var_slope + var_eps, labeller = label_both, ncol = 2, scales="free_y") +
-  ylab("Cross-validation error") +
+  ylab("Cross-validated MSE") +
   theme(axis.title.x=element_blank(), 
         axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         legend.position = "none")
@@ -105,13 +119,13 @@ ggsave("./Simulations/ClustData/Results/figures/cv_first_fixed.pdf", width=9, he
 
 
 res <- results[results$fixed=="second",]
-res$N_n_i <- paste0("N = ", res$N, ", n_i = ", res$n_i)
-res$N_n_i <- factor(res$N_n_i, levels=c("N = 10, n_i = 5", "N = 10, n_i = 25", "N = 50, n_i = 5", "N = 50, n_i = 25"))
+res$N_n_i <- paste0("N = ", res$N, ", n_m = ", res$n_i)
+res$N_n_i <- factor(res$N_n_i, levels=c("N = 10, n_m = 5", "N = 10, n_m = 25", "N = 50, n_m = 5", "N = 50, n_m = 25"))
 
 library("ggplot2")
 p <- ggplot(data=res, aes(x=N_n_i, y=CV_err, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ var_intercept + var_slope + var_eps, labeller = label_both, ncol = 2, scales="free_y") +
-  ylab("Cross-validation error") +
+  ylab("Cross-validated MSE") +
   theme(axis.title.x=element_blank(), 
         axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         legend.position = "none")
