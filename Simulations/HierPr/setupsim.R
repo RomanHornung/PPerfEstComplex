@@ -278,7 +278,7 @@ sim_data <- function(n, coeflist) {
 
   }
 
-  # Bring the outcome into the format need by 'hierclass':
+  # Bring the outcome into the format needed by 'hierclass':
   ystring <- apply(outcomemat, 1, function(x) paste(x, collapse="."))
 
   # Make the data.frame:
@@ -295,8 +295,30 @@ sim_data <- function(n, coeflist) {
 
 
 
+# Function used to evaluate how well the simulated data
+# works:
+
+
+# Function input:
+
+# data: simulated data as output by sim_data().
+# ntrain: Number of observations used for training
+#  (the rest is used for testing).
+
+# Function output:
+
+# A list containing the following:
+# precs: A vector of length 5, where the j-th element is the precision at the j-th layer.
+# precscond: A vector of length 5, where the j-th element is the 'conditional precision' at the j-th layer,
+# meaning the number of observations correctly predicted at the j-th layer divided by the number
+# of observations correctly predicted a the j-1-th layer.
+
 eval_perm <- function(data, ntrain=round(nrow(data)*(2/3))) {
 
+  
+  # Train the prediction rule on the training data and obtain predictions
+  # for the test data:
+  
   # Load the required packages:
   library("mlr3")
   library("hierclass")
@@ -312,73 +334,64 @@ eval_perm <- function(data, ntrain=round(nrow(data)*(2/3))) {
   predictions = learner$predict(task, row_ids = (ntrain+1):nrow(data))
 
 
-  ui <- data.frame(truth=data[(ntrain+1):nrow(data),]$y, pred=predictions$response)
+  
+  # Data frame containing the true and predicted observations:
+  
+  truthpred <- data.frame(truth=data[(ntrain+1):nrow(data),]$y, pred=predictions$response)
 
-  ui0 <- ui[sapply(as.character(ui$truth), function(x) strsplit(x, split="\\.")[[1]][1])!=
-              sapply(as.character(ui$pred), function(x) strsplit(x, split="\\.")[[1]][1]),]
+  
+  
+  # Subset the above data frame to only contain the observations correctly predicted
+  # at the j-th layer:
+  
+  truthpred1 <- truthpred[sapply(as.character(truthpred$truth), function(x) strsplit(x, split="\\.")[[1]][1])==
+              sapply(as.character(truthpred$pred), function(x) strsplit(x, split="\\.")[[1]][1]),]
 
-  ui1 <- ui[sapply(as.character(ui$truth), function(x) strsplit(x, split="\\.")[[1]][1])==
-              sapply(as.character(ui$pred), function(x) strsplit(x, split="\\.")[[1]][1]),]
+  truthpred2 <- truthpred[sapply(as.character(truthpred$truth), function(x) paste(strsplit(x, split="\\.")[[1]][1:2], collapse="."))==
+              sapply(as.character(truthpred$pred), function(x) paste(strsplit(x, split="\\.")[[1]][1:2], collapse=".")),]
 
-  ui2 <- ui[sapply(as.character(ui$truth), function(x) paste(strsplit(x, split="\\.")[[1]][1:2], collapse="."))==
-              sapply(as.character(ui$pred), function(x) paste(strsplit(x, split="\\.")[[1]][1:2], collapse=".")),]
+  truthpred3 <- truthpred[sapply(as.character(truthpred$truth), function(x) paste(strsplit(x, split="\\.")[[1]][1:3], collapse="."))==
+              sapply(as.character(truthpred$pred), function(x) paste(strsplit(x, split="\\.")[[1]][1:3], collapse=".")),]
 
-  ui3 <- ui[sapply(as.character(ui$truth), function(x) paste(strsplit(x, split="\\.")[[1]][1:3], collapse="."))==
-              sapply(as.character(ui$pred), function(x) paste(strsplit(x, split="\\.")[[1]][1:3], collapse=".")),]
+  truthpred4 <- truthpred[sapply(as.character(truthpred$truth), function(x) paste(strsplit(x, split="\\.")[[1]][1:4], collapse="."))==
+              sapply(as.character(truthpred$pred), function(x) paste(strsplit(x, split="\\.")[[1]][1:4], collapse=".")),]
 
-  ui4 <- ui[sapply(as.character(ui$truth), function(x) paste(strsplit(x, split="\\.")[[1]][1:4], collapse="."))==
-              sapply(as.character(ui$pred), function(x) paste(strsplit(x, split="\\.")[[1]][1:4], collapse=".")),]
+  truthpred5 <- truthpred[as.character(truthpred$truth)==as.character(truthpred$pred),]
 
-  ui5 <- ui[as.character(ui$truth)==as.character(ui$pred),]
+  
+  
+  # Calculate the precisions at the different layers:
+  
+  precs <- c(nrow(truthpred1),
+           nrow(truthpred2),
+           nrow(truthpred3),
+           nrow(truthpred4),
+           nrow(truthpred5))/(nrow(data)-ntrain)
 
-  aha <- c(nrow(ui1),
-           nrow(ui2),
-           nrow(ui3),
-           nrow(ui4),
-           nrow(ui5))/(nrow(data)-ntrain)
+  
+  
+  # Calculate the conditional precisions at the different layers:
+  
+  precscond <- c(nrow(truthpred1)/(nrow(data)-ntrain),
+            nrow(truthpred2)/nrow(truthpred1),
+            nrow(truthpred3)/nrow(truthpred2),
+            nrow(truthpred4)/nrow(truthpred3),
+            nrow(truthpred5)/nrow(truthpred4))
 
-  accs <- c(nrow(ui1)/(nrow(data)-ntrain),
-            nrow(ui2)/nrow(ui1),
-            nrow(ui3)/nrow(ui2),
-            nrow(ui4)/nrow(ui3),
-            nrow(ui5)/nrow(ui4))
-
-  return(list(precs=aha, precscond=accs, ntrain=ntrain, ntest=nrow(data)-ntrain))
+  
+  return(list(precs=precs, precscond=precscond, ntrain=ntrain, ntest=nrow(data)-ntrain))
 
 }
 
 
 
-# res1_s:
-
-# sqrt(1),
-# sdbeta=sqrt(c(1, 1.5, 2, 2.5, 3))
-
-# res2_s:
-
-# sqrt(1),
-# sdbeta=sqrt(c(1.3, 1.5, 1.7, 1.9, 2.1))
-
-# sqrt(1),
-# sdbeta=sqrt(c(1.5, 1.3, 1.1, 0.9, 0.7))
-
-# sqrt(1),
-# sdbeta=sqrt(c(2, 1.5, 0.9, 0.7, 0.5))
-
-# sqrt(1),
-# sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5))
 
 
 
-diff(c(2, 1.5, 0.9, 0.7, 0.5))
 
 
-res1_s <- res
-res1_l <- res2
-
-
-
-# innerclasses
+# Simulate 10 datasets of size n=1000 and evaluate their performance
+# using eval_perm():
 
 set.seed(1234)
 
@@ -401,7 +414,8 @@ res5_s
 
 
 
-
+# Simulate 10 datasets of size n=3000 and evaluate their performance
+# using eval_perm():
 
 res5_l <- list()
 
@@ -422,25 +436,82 @@ res5_l
 
 
 
-aha <- as.character(dataobj$data$y)
-fix(aha)
 
-barplot(table(aha))
+# Plot the results:
 
 boxplot(t(sapply(res5_s, function(x) x$precs)))
-
 boxplot(t(sapply(res5_s, function(x) x$precscond)))
 
-t(sapply(res5_s, function(x) x$precscond))
-
-
-
 boxplot(t(sapply(res5_l, function(x) x$precs)))
-
 boxplot(t(sapply(res5_l, function(x) x$precscond)))
-t(sapply(res5_l, function(x) x$precscond))
-x11()
-boxplot(t(sapply(res3_l, function(x) x$precscond)))
+
+res5 <- c(res5_s, res5_l)
+boxplot(t(sapply(res5, function(x) x$precs)))
+boxplot(t(sapply(res5, function(x) x$precscond)))
+colMeans(t(sapply(res5, function(x) x$precscond)))
+
+
+
+
+# Frequencies of the end node classes in one of the
+# datasets:
+
+barplot(table(dataobj$data$y))
+
+
+
+
+# Previous tries with different parameter values:
+
+# sqrt(1),
+# sdbeta=sqrt(c(1, 1.5, 2, 2.5, 3))
+
+# sqrt(1),
+# sdbeta=sqrt(c(1.3, 1.5, 1.7, 1.9, 2.1))
+
+# sqrt(1),
+# sdbeta=sqrt(c(1.5, 1.3, 1.1, 0.9, 0.7))
+
+# sqrt(1),
+# sdbeta=sqrt(c(2, 1.5, 0.9, 0.7, 0.5))
+
+
+
+
+# HIER GEHTS WEITER HIER GEHTS WEITER HIER GEHTS WEITER HIER GEHTS WEITER
+
+
+names(dataobj)
+
+
+datatemp <- dataobj$coeflist[[length(dataobj$coeflist)]]$datanode
+names(datatemp)
+
+library("nnet")
+modtemp <- multinom(y ~ ., data = datatemp)
+summary(modtemp)
+z <- summary(modtemp)$coefficients/summary(modtemp)$standard.errors
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+options(scipen=999)
+p
+options(scipen=0)
+
+
+
+
+datatemp <- dataobj$coeflist[[1]]$datanode
+names(datatemp)
+
+library("nnet")
+modtemp <- multinom(y ~ ., data = datatemp)
+summary(modtemp)
+z <- summary(modtemp)$coefficients/summary(modtemp)$standard.errors
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+options(scipen=999)
+p
+options(scipen=0)
+
+
 
 # NAECHSTER SCHRITT: SCHAUEN, OB DIE SIMULATIONSPARAMETER PASSEN,
 # INDEM GESCHAUT WIRD WIR GUT DIE MODELLE IN DEN EINZELNEN KNOTEN
