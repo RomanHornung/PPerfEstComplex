@@ -1,4 +1,4 @@
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 source("./simulations/hierpr/functions.R")
@@ -478,10 +478,16 @@ barplot(table(dataobj$data$y))
 
 
 
-# HIER GEHTS WEITER HIER GEHTS WEITER HIER GEHTS WEITER HIER GEHTS WEITER
+# NAECHSTER SCHRITT: BUGS IN sim_data KORRIGIEREN, WEIL  ICH
+# BEKOMM DA IM UNTEREN OHNE DEN SEED DAVOR OFT 
+# Error in desmat %*% coefs[1, ] : non-conformable arguments
 
+set.seed(1234)
 
-names(dataobj)
+coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                           sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
+
+dataobj <- sim_data(n=1000, coeflist=coeflist)
 
 
 datatemp <- dataobj$coeflist[[length(dataobj$coeflist)]]$datanode
