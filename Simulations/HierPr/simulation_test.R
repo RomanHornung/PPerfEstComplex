@@ -6,7 +6,7 @@ setwd("~/PPerfEstComplex")
 
 # Make table of settings:
 
-n <- c(200, 500, 1000, 3000)
+n <- c(200)
 iters <- 1:100
 
 scenariogrid <- expand.grid(iter=iters, n=n, stringsAsFactors = TRUE)
@@ -27,7 +27,7 @@ rownames(scenariogrid) <- NULL
 
 # Save scenariogrid, needed in evaluation of the results:
 
-save(scenariogrid, file="./simulations/hierpr/results/intermediate_results/scenariogrid.Rda")
+save(scenariogrid, file="./simulations/hierpr/results/intermediate_results/scenariogridtest.Rda")
 
 
 
@@ -35,7 +35,7 @@ save(scenariogrid, file="./simulations/hierpr/results/intermediate_results/scena
 # Source the functions that are used in performing the calculations 
 # on the cluster:
 
-source("./simulations/hierpr/functions_simulation.R")
+source("./simulations/hierpr/functions_simulation_test.R")
 
 
 
@@ -65,7 +65,7 @@ results <- parLapply(cl, 1:nrow(scenariogrid), function(z)
 
 # Save the results:  
   
-save(results, file="./simulations/hierpr/results/intermediate_results/results.Rda")  
+save(results, file="./simulations/hierpr/results/intermediate_results/resultstest.Rda")  
   
   
 # Stop the cluster:

@@ -1,4 +1,4 @@
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 source("./simulations/hierpr/functions_simulation.R")
@@ -19,6 +19,7 @@ coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
 
 
 datatrain <- sim_data(n=1000, coeflist=coeflist)
+barplot(table(datatrain$y))
 
 datatest <- sim_data(n=1000, coeflist=coeflist)
 
@@ -46,7 +47,7 @@ learner = lrn("classif.topdown")
 
 # set.seed(1234)
 
-cv3 <- rsmp("repeated_cv", repeats = 1, folds = 2)
+cv3 <- rsmp("repeated_cv", repeats = 1, folds = 5)
 
 cv3$instantiate(task)
 result_cv3 <- resample(task=task, learner=learner, resampling=cv3)
@@ -209,6 +210,27 @@ res <- data.frame(measure=c("hierf_micro", "hierf_macro", "hierpr_micro",
   predictions$score(msr("classif.acc"))
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  load("./simulations/hierpr/results/intermediate_results/treestruc.Rda")
+  
+  
+  # set.seed(1234)
+  
+  
+  coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                             sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
+  
+  
+  datatrain <- sim_data(n=1000, coeflist=coeflist)
+  
+  datatest <- sim_data(n=1000, coeflist=coeflist)
   
   
   

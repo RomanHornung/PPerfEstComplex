@@ -24,7 +24,7 @@ evaluatesetting <- function(iter, wd) {
   
   datatrain <- sim_data(n=n, coeflist=coeflist)
   
-  datatest <- sim_data(n=200000, coeflist=coeflist)
+  datatest <- sim_data(n=1000, coeflist=coeflist)
   
   
   
@@ -47,7 +47,7 @@ evaluatesetting <- function(iter, wd) {
   
   set.seed(seed_res)
   
-  cv3 <- rsmp("repeated_cv", repeats = 10, folds = 5)
+  cv3 <- rsmp("repeated_cv", repeats = 1, folds = 2)
   
   cv3$instantiate(task)
   result_cv3 <- resample(task=task, learner=learner, resampling=cv3)
@@ -118,7 +118,7 @@ evaluatesetting <- function(iter, wd) {
                     stratCV_vals=stratCV_vals, truth_vals=truth_vals)
   
   
-  save(res, file=paste0("./simulations/hierpr/results/intermediate_results/res_", iter, ".Rda"))
+  save(res, file=paste0("./simulations/hierpr/results/intermediate_results/restest_", iter, ".Rda"))
   
   # Return the results:
   
