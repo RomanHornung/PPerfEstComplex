@@ -1,7 +1,7 @@
-setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
-source("./simulations/hierpr/functions.R")
+source("./simulations/hierpr/functions_setupsim.R")
 
 
 if (FALSE) {
@@ -89,304 +89,6 @@ if (FALSE) {
 
 
 load("./simulations/hierpr/results/intermediate_results/treestruc.Rda")
-
-
-
-
-
-
-# Function to simulate the coefficients:
-
-
-# Function input:
-
-# treestruc: A list. The tree structure.
-# sdbeta0: The standard deviation of the normal distribution from which
-# the intercepts are drawn.
-# sdbeta: The standard deviation of the normal distribution from which
-# the coefficients are drawn. These depend on the layer of the tree because
-# lower tree layers should feature less predictive signal.
-
-# Function output:
-
-# A list containing, for each internal node the coefs to be used in the
-# simulation, the child nodes, the parent nodes, and the layer of each node.
-
-simulate_coefs <- function(treestruc, sdbeta0=sqrt(1),
-                           sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5))) {
-
-  # Make a list that will contain the simulated coefficients as well as
-  # information on the tree structure (specifying the position of the
-  # node in the trees):
-  
-  coeflist <- vector(mode = "list", length = length(treestruc$nodelist))
-  
-  
-  # Add the information on the tree structure:
-  
-  for(i in seq(along=coeflist)) {
-    
-    coeflist[[i]] <- list()
-
-    # Add the information on the child nodes for each node:
-    coeflist[[i]]$childnodes <- treestruc$nodelist[[i]]
-
-    # Add the information on the parent nodes for each node:
-    coeflist[[i]]$parentnodes <- which(sapply(1:length(coeflist), function(x) i %in% coeflist[[x]]$childnodes))
-
-    # Add the layer of each node:
-    coeflist[[i]]$layer <- which(sapply(1:length(treestruc$leftnodes), function(x) (i >= treestruc$leftnodes[x]) & (i <= treestruc$rightnodes[x])))
-
-  }
-
-  # Simulate the coefficients:
-
-  for(i in seq(along=coeflist)) {
-
-    # If the node has only two child nodes, we need only one set of coefficients:
-    if(length(coeflist[[i]]$childnodes)==2) {
-      coefs <- matrix(nrow=1, ncol=6, data=c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
-    }
-    # If the node has three child nodes, we need two sets of coefficients:
-    if(length(coeflist[[i]]$childnodes)==3) {
-      coefs <- rbind(c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])),
-                     c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
-    }
-
-    coeflist[[i]]$coefs <- coefs
-
-  }
-
-  return(coeflist)
-
-}
-
-
-
-
-# Function that takes the covariate matrix of the subset of observations
-# contained in a node and the coefficients associated with that node
-# to output the indices of the child nodes to which the observations
-# get assigned to.
-# Note that the assignments are performed according to a multinomial
-# regression model.
-
-
-# Function input:
-
-# Xsub: The matrix of observations in the current node. Observations in
-# rows and variables in columns.
-# coefs: The matrix of coefficients associated with the current node.
-
-# Function output:
-
-# A vector that gives the index of the child node for each observation.
-
-get_child_nodes <- function(Xsub, coefs) {
-
-  # Determine the (unstandardized) probabilities for each child node:
-  
-  desmat <- cbind(1, Xsub)
-
-  if (nrow(coefs)==2)
-    vProb <- cbind(1, exp(desmat%*%coefs[1,]), exp(desmat%*%coefs[2,]))
-  else
-    vProb <- cbind(1, exp(desmat%*%coefs[1,]))
-
-  # Draw the child nodes based on the probabilities obtained in the
-  # first step:
-  
-  mChoices <- t(apply(vProb, 1, rmultinom, n = 1, size = 1))
-  
-  
-  # Make a vector of the child node indices:
-  
-  ys <- apply(mChoices, 1, function(x) which(x==1))
-
-  return(ys)
-
-}
-
-
-
-
-
-
-
-# Function to simulate the data:
-
-
-# Function input:
-
-# n: Number of observations to simulate.
-# coeflist: Result of simulate_coefs. A list that the coefs to be used in the
-# simulation as well as other information about the tree structure.
-
-# Function output:
-
-# A list containing the following:
-# data: The simulated data.frame.
-# coeflist: The input list 'coeflist' to which the simulated data associated
-# with each node was added.
-
-sim_data <- function(n, coeflist) {
-
-  # Simulate the covariate matrix:
-  
-  X <- matrix(nrow=n, ncol=5, rnorm(n*5))
-
-
-  # Simulate the outcome:
-  
-  maxlayer <- max(sapply(coeflist, function(x) x$layer))
-
-  # Outcome matrix with 5 columns, where the j-th column
-  # will contain the classes of the observations in the
-  # j-th layer:
-  outcomemat <- matrix(nrow=nrow(X), ncol=maxlayer)
-
-  
-  # Assign the child node classes of the observations in the root node:
-
-  # Determine the child nodes of the root node:
-  tempclass <- coeflist[[1]]$childnodes[get_child_nodes(X, coeflist[[1]]$coefs)]
-
-  # Assign these child node classes:
-  outcomemat[,1] <- tempclass
-
-  # Store the data associated with the node also in 'coeflist':
-  coeflist[[1]]$datanode <- data.frame(X)
-  coeflist[[1]]$datanode$y <- factor(tempclass)
-
-
-  # Assign the child node classes of the observations in all other subsequent nodes:
-
-  for(i in 2:length(coeflist)) {
-
-    # Determine the subset of observations that are in the i-th node:
-    subs <- outcomemat[,coeflist[[i]]$layer-1]==i
-    
-    # Determine the child nodes for this subset of observations:
-    tempclass <- coeflist[[i]]$childnodes[get_child_nodes(X[subs,], coeflist[[i]]$coefs)]
-
-    # Assign these child nodes to the corresponding rows in 'outcomemat':
-    outcomemat[subs,coeflist[[i]]$layer] <- tempclass
-
-    # Store the data associated with the node also in 'coeflist':
-    coeflist[[i]]$datanode <- data.frame(X[subs,])
-    coeflist[[i]]$datanode$y <- factor(tempclass)
-
-  }
-
-  # Bring the outcome into the format needed by 'hierclass':
-  ystring <- apply(outcomemat, 1, function(x) paste(x, collapse="."))
-
-  # Make the data.frame:
-  data <- data.frame(X)
-  data$y <- factor(ystring)
-
-  return(list(data=data, coeflist=coeflist))
-
-}
-
-
-
-
-
-
-
-# Function used to evaluate how well the simulated data
-# works:
-
-
-# Function input:
-
-# data: simulated data as output by sim_data().
-# ntrain: Number of observations used for training
-#  (the rest is used for testing).
-
-# Function output:
-
-# A list containing the following:
-# precs: A vector of length 5, where the j-th element is the precision at the j-th layer.
-# precscond: A vector of length 5, where the j-th element is the 'conditional precision' at the j-th layer,
-# meaning the number of observations correctly predicted at the j-th layer divided by the number
-# of observations correctly predicted a the j-1-th layer.
-
-eval_perm <- function(data, ntrain=round(nrow(data)*(2/3))) {
-
-  
-  # Train the prediction rule on the training data and obtain predictions
-  # for the test data:
-  
-  # Load the required packages:
-  library("mlr3")
-  library("hierclass")
-
-  # Define the task for the top-down classification rule:
-  task = as_task_classif(y ~ ., data = data)
-
-  # Initialize the learner for the top-down classification rule:
-  learner = lrn("classif.topdown")
-
-  learner$train(task, row_ids = 1:ntrain)
-
-  predictions = learner$predict(task, row_ids = (ntrain+1):nrow(data))
-
-
-  
-  # Data frame containing the true and predicted observations:
-  
-  truthpred <- data.frame(truth=data[(ntrain+1):nrow(data),]$y, pred=predictions$response)
-
-  
-  
-  # Subset the above data frame to only contain the observations correctly predicted
-  # at the j-th layer:
-  
-  truthpred1 <- truthpred[sapply(as.character(truthpred$truth), function(x) strsplit(x, split="\\.")[[1]][1])==
-              sapply(as.character(truthpred$pred), function(x) strsplit(x, split="\\.")[[1]][1]),]
-
-  truthpred2 <- truthpred[sapply(as.character(truthpred$truth), function(x) paste(strsplit(x, split="\\.")[[1]][1:2], collapse="."))==
-              sapply(as.character(truthpred$pred), function(x) paste(strsplit(x, split="\\.")[[1]][1:2], collapse=".")),]
-
-  truthpred3 <- truthpred[sapply(as.character(truthpred$truth), function(x) paste(strsplit(x, split="\\.")[[1]][1:3], collapse="."))==
-              sapply(as.character(truthpred$pred), function(x) paste(strsplit(x, split="\\.")[[1]][1:3], collapse=".")),]
-
-  truthpred4 <- truthpred[sapply(as.character(truthpred$truth), function(x) paste(strsplit(x, split="\\.")[[1]][1:4], collapse="."))==
-              sapply(as.character(truthpred$pred), function(x) paste(strsplit(x, split="\\.")[[1]][1:4], collapse=".")),]
-
-  truthpred5 <- truthpred[as.character(truthpred$truth)==as.character(truthpred$pred),]
-
-  
-  
-  # Calculate the precisions at the different layers:
-  
-  precs <- c(nrow(truthpred1),
-           nrow(truthpred2),
-           nrow(truthpred3),
-           nrow(truthpred4),
-           nrow(truthpred5))/(nrow(data)-ntrain)
-
-  
-  
-  # Calculate the conditional precisions at the different layers:
-  
-  precscond <- c(nrow(truthpred1)/(nrow(data)-ntrain),
-            nrow(truthpred2)/nrow(truthpred1),
-            nrow(truthpred3)/nrow(truthpred2),
-            nrow(truthpred4)/nrow(truthpred3),
-            nrow(truthpred5)/nrow(truthpred4))
-
-  
-  return(list(precs=precs, precscond=precscond, ntrain=ntrain, ntest=nrow(data)-ntrain))
-
-}
-
-
-
-
-
 
 
 
@@ -478,9 +180,7 @@ barplot(table(dataobj$data$y))
 
 
 
-# NAECHSTER SCHRITT: BUGS IN sim_data KORRIGIEREN, WEIL  ICH
-# BEKOMM DA IM UNTEREN OHNE DEN SEED DAVOR OFT 
-# Error in desmat %*% coefs[1, ] : non-conformable arguments
+
 
 set.seed(1234)
 
@@ -489,33 +189,105 @@ coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
 
 dataobj <- sim_data(n=1000, coeflist=coeflist)
 
+for(i in seq(along=dataobj$coeflist)) {
+  
+  datatemp <- dataobj$coeflist[[i]]$datanode
+  
+  if(!is.data.frame(datatemp))
+    dataobj$coeflist[[i]]$p <- NA
+  else {
+    
+    library("nnet")
+    modtemp <- multinom(y ~ ., data = datatemp)
+    summary(modtemp)
+    z <- summary(modtemp)$coefficients/summary(modtemp)$standard.errors
+    p <- (1 - pnorm(abs(z), 0, 1)) * 2
+    
+    if(class(p)[1]=="matrix")
+      res <- p[,-1]
+    if(class(p)[1]=="numeric")
+      res <- p[-1]
+    
+    dataobj$coeflist[[i]]$p <- res
+    
+  }
+  
+}
 
-datatemp <- dataobj$coeflist[[length(dataobj$coeflist)]]$datanode
-names(datatemp)
+pvals <- lapply(dataobj$coeflist, function(x) as.vector(x$p))
+layers <- sapply(dataobj$coeflist, function(x) x$layer)
 
-library("nnet")
-modtemp <- multinom(y ~ ., data = datatemp)
-summary(modtemp)
-z <- summary(modtemp)$coefficients/summary(modtemp)$standard.errors
-p <- (1 - pnorm(abs(z), 0, 1)) * 2
-options(scipen=999)
-p
-options(scipen=0)
+boxplot(unlist(pvals) ~ rep(layers, times=sapply(pvals, length)))
 
 
 
 
-datatemp <- dataobj$coeflist[[1]]$datanode
-names(datatemp)
+set.seed(1234)
 
-library("nnet")
-modtemp <- multinom(y ~ ., data = datatemp)
-summary(modtemp)
-z <- summary(modtemp)$coefficients/summary(modtemp)$standard.errors
-p <- (1 - pnorm(abs(z), 0, 1)) * 2
-options(scipen=999)
-p
-options(scipen=0)
+pvalsvec <- layersvec <- c()
+
+for(count in 1:20) {
+  
+  boolFalse <- FALSE
+  while (boolFalse == FALSE)
+  {
+    tryCatch({
+      
+      coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                                 sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
+      
+      dataobj <- sim_data(n=1000, coeflist=coeflist)
+      
+      for(i in seq(along=dataobj$coeflist)) {
+        
+        datatemp <- dataobj$coeflist[[i]]$datanode
+        
+        if(!is.data.frame(datatemp))
+          dataobj$coeflist[[i]]$p <- NA
+        else {
+          
+          library("nnet")
+          modtemp <- multinom(y ~ ., data = datatemp)
+          summary(modtemp)
+          z <- summary(modtemp)$coefficients/summary(modtemp)$standard.errors
+          p <- (1 - pnorm(abs(z), 0, 1)) * 2
+          
+          if(class(p)[1]=="matrix")
+            res <- p[,-1]
+          if(class(p)[1]=="numeric")
+            res <- p[-1]
+          
+          dataobj$coeflist[[i]]$p <- res
+          
+        }
+        
+      }
+      
+      boolFalse <- TRUE
+    }, error = function(e){
+    }, finally = {})
+  }
+  
+  pvals <- lapply(dataobj$coeflist, function(x) as.vector(x$p))
+  layers <- sapply(dataobj$coeflist, function(x) x$layer)
+  
+  pvalsvec <- c(pvalsvec, unlist(pvals))
+  layersvec <- c(layersvec, rep(layers, times=sapply(pvals, length)))
+  
+}
+
+
+boxplot(pvalsvec ~ layersvec)
+hist(pvalsvec[layersvec==5], 50)
+
+
+
+
+
+
+
+
+
 
 
 
