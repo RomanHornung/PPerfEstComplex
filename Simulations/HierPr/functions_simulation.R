@@ -1,6 +1,6 @@
 
 
-evaluatesetting <- function(iter, wd) {
+evaluatesetting <- function(iter) {
   
   setwd(wd)
   

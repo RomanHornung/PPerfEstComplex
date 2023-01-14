@@ -30,6 +30,7 @@ rownames(scenariogrid) <- NULL
 save(scenariogrid, file="./simulations/hierpr/results/intermediate_results/scenariogrid.Rda")
 
 
+wd <- getwd()
 
 
 # Source the functions that are used in performing the calculations 
@@ -57,9 +58,9 @@ clusterExport(cl, list=ls())
 
 # Perform the calculations and save the results (saving is performed within 'evaluatesetting'):
 
-wd <- getwd()
+
 results <- parLapply(cl, 1:nrow(scenariogrid), function(z)
-  try({evaluatesetting(z, wd)}))
+  try({evaluatesetting(z)}))
 
   
 
