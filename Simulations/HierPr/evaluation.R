@@ -119,7 +119,7 @@ resultstemp$type <-factor(resultstemp$type, levels=c("CV_percdiff", "stratCV_per
 library("ggplot2")
 p <- ggplot(data=resultstemp, aes(x=n, y=value, fill=type)) + theme_bw() +
   geom_boxplot() + geom_hline(yintercept=0, linetype="dashed", color="blue") + 
-  facet_wrap(~measure, scales="free_y") + ylab("Standardized difference") +
+  facet_wrap(~measure, scales="free_y") + ylab("Difference between estimated and true error divided by true error") +
   theme(axis.title = element_text(color="black"), legend.position = "none")
 p
 
