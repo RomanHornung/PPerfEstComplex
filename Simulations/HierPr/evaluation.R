@@ -153,6 +153,18 @@ ggsave("./Simulations/HierPr/Results/figures/standardized_difference.pdf", width
 
 
 
+source("./simulations/hierpr/functions_simulation.R")
+load("./simulations/hierpr/results/intermediate_results/treestruc.Rda")
+
+#asdf
+
+p <- plot_structure(treestruc)
+
+# ggsave("./Simulations/HierPr/results/figures/Figure_treestruc.pdf", width=10, height=15)
+ggsave("./Simulations/HierPr/results/figures/treestruc.pdf", width=18*0.9, height=3.5*0.9)
+
+
+
 
 
 

@@ -319,11 +319,6 @@ n <- 5000
 
 
 
-p <- plot_structure(treestruc)
-ggsave("./Simulations/HierPr/results/figures/Figure_treestruc.pdf", width=18, height=4)
-
-
-
 
 
 
