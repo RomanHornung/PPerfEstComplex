@@ -10,7 +10,7 @@
 #SBATCH --tasks-per-node=20
 #SBATCH --mail-type=end
 #SBATCH --mail-user=hornung@ibe.med.uni-muenchen.de
-#SBATCH --time=24:00:00
+#SBATCH --time=6:00:00
 
 module load slurm_setup
 module load r
