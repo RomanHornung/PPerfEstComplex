@@ -1,4 +1,4 @@
-setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 # Load and pre-process the results:
@@ -258,8 +258,334 @@ ui2 <- data.frame(truth=datatest$y, prednew=predsbignew)
 
 
 
+set.seed(1234)
+
+seeds <- sample(1000:1000000, size=4)
+
+
+stratCVaccs <- CVaccs <- 0
+
+for(count in 1:4) {
+  
+  set.seed(seeds[count])
+  
+  library("hierclass")
+  library("mlr3")
+  
+  coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                             sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
+  datatrain <- sim_data(n=200, coeflist=coeflist)
+  
+  
+  # Define the task for the top-down classification rule:
+  task = as_task_classif(y ~ ., data = datatrain)
+  
+  # Initialize the learner for the top-down classification rule:
+  learner = lrn("classif.topdown")
+  
+  cv3 <- rsmp("repeated_cv", repeats = 1, folds = 5)
+  
+  # task$col_roles$stratum = task$target_names
+  
+  cv3$instantiate(task)
+  
+  foldinfoCV <- as.data.frame(cv3$instance)
+  foldinfoCV <- foldinfoCV[order(foldinfoCV$row_id),]
+  
+  ynew <- datatrain$y
+  ynew <- factor(as.character(ynew))
+  
+  
+  foldCV <- sapply(1:5, function(x) table(ynew[foldinfoCV$fold==x]))#/sum(table(ynew[ui$fold==x])))
+  foldCV
+  boxplot(t(foldCV))
+  
+  
+  
+  task$col_roles$stratum = task$target_names
+  
+  cv3$instantiate(task)
+  
+  foldinfostratCV <- as.data.frame(cv3$instance)
+  foldinfostratCV <- foldinfostratCV[order(foldinfostratCV$row_id),]
+  
+  foldstratCV <- sapply(1:5, function(x) table(ynew[foldinfostratCV$fold==x]))#/sum(table(ynew[ui$fold==x])))
+  boxplot(t(foldstratCV))
+  
+  
+  
+  
+  stratCVacc <- CVacc <- 0
+  
+  for(i in 1:5) {
+    
+    object <- topdown(y ~ ., data=datatrain[foldinfostratCV$fold!=i,])
+    predsstratCV <- predict(object, data=datatrain[foldinfostratCV$fold==i,])
+    truthstratCV <- datatrain[foldinfostratCV$fold==i,]$y
+    
+    object <- topdown(y ~ ., data=datatrain[foldinfoCV$fold!=i,])
+    predsCV <- predict(object, data=datatrain[foldinfoCV$fold==i,])
+    truthCV <- datatrain[foldinfoCV$fold==i,]$y
+    
+    stratCVacc[i] <- mean(predsstratCV==truthstratCV)
+    CVacc[i] <- mean(predsCV==truthCV)
+    
+    cat(mean(predsstratCV==truthstratCV), "\n")
+    cat(mean(predsCV==truthCV), "\n")
+    
+  }
+  
+  stratCVaccs[count] <- mean(stratCVacc)
+  CVaccs[count] <- mean(CVacc)
+  
+  cat(paste0("Iteration: ", count), "\n")
+  
+}
+
+
+stratCVaccs
+CVaccs
+
+plot(rep(1:2, each=4), c(stratCVaccs, CVaccs))
+
+
+plot(rep(1:2, each=5), c(stratCVacc, CVacc))
+
+
+stratCVacc
+
+i<-4
+object <- topdown(y ~ ., data=datatrain[foldinfostratCV$fold!=i,])
+predsstratCV <- predict(object, data=datatrain[foldinfostratCV$fold==i,])
+truthstratCV <- datatrain[foldinfostratCV$fold==i,]$y
+
+ui <- data.frame(pred=predsstratCV, truth=truthstratCV)
+
+ui2 <- ui[ui$pred==ui$truth,]
+
+indic <- rep(0, nrow(foldstratCV))
+indic[rownames(foldstratCV) %in% as.character(ui2$pred)] <- 1
+
+oh <- cbind(foldstratCV, indic)
+
+
+
+i<-1
+object <- topdown(y ~ ., data=datatrain[foldinfoCV$fold!=i,])
+predsCV <- predict(object, data=datatrain[foldinfoCV$fold==i,])
+truthCV <- datatrain[foldinfoCV$fold==i,]$y
+
+ui <- data.frame(pred=predsCV, truth=truthCV)
+
+ui2 <- ui[ui$pred==ui$truth,]
+
+indic <- rep(0, nrow(foldCV))
+indic[rownames(foldCV) %in% as.character(ui2$pred)] <- 1
+
+ohCV <- cbind(foldCV, indic)
+
+fix(oh)
+
+
+par(mfrow=c(1,2))
+boxplot(t(foldCV))
+boxplot(t(foldstratCV))
+par(mfrow=c(1,1))
+
+
+
+foldCV
+foldstratCV
+all(rownames(foldCV)==rownames(foldstratCV))
+
+ui <- cbind(foldCV, foldstratCV)
+fix(ui)
+
+
+foldinfo
+
+
+
+
+
+
+
+set.seed(seeds[2])
+
+library("hierclass")
+library("mlr3")
+
+coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                           sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
+datatrain <- sim_data(n=200, coeflist=coeflist)
+
+
+# Define the task for the top-down classification rule:
+task = as_task_classif(y ~ ., data = datatrain)
+
+# Initialize the learner for the top-down classification rule:
+learner = lrn("classif.topdown")
+
+cv3 <- rsmp("repeated_cv", repeats = 1, folds = 5)
+
+# task$col_roles$stratum = task$target_names
+
+cv3$instantiate(task)
+
+foldinfoCV <- as.data.frame(cv3$instance)
+foldinfoCV <- foldinfoCV[order(foldinfoCV$row_id),]
+
+ynew <- datatrain$y
+ynew <- factor(as.character(ynew))
+
+
+foldCV <- sapply(1:5, function(x) table(ynew[foldinfoCV$fold==x]))#/sum(table(ynew[ui$fold==x])))
+foldCV
+boxplot(t(foldCV))
+
+
+
+task$col_roles$stratum = task$target_names
+
+cv3$instantiate(task)
+
+foldinfostratCV <- as.data.frame(cv3$instance)
+foldinfostratCV <- foldinfostratCV[order(foldinfostratCV$row_id),]
+
+foldstratCV <- sapply(1:5, function(x) table(ynew[foldinfostratCV$fold==x]))#/sum(table(ynew[ui$fold==x])))
+boxplot(t(foldstratCV))
+
+
+
+
+stratCVacc <- CVacc <- 0
+
+allclasses <- as.character(unique(datatrain$y))
+allclassesscoresCV <- allclassesscoresstratCV <- rep(0, length(allclasses))
+
+for(i in 1:5) {
+  
+  object <- topdown(y ~ ., data=datatrain[foldinfostratCV$fold!=i,])
+  predsstratCV <- predict(object, data=datatrain[foldinfostratCV$fold==i,])
+  truthstratCV <- datatrain[foldinfostratCV$fold==i,]$y
+  
+  object <- topdown(y ~ ., data=datatrain[foldinfoCV$fold!=i,])
+  predsCV <- predict(object, data=datatrain[foldinfoCV$fold==i,])
+  truthCV <- datatrain[foldinfoCV$fold==i,]$y
+  
+  stratCVacc[i] <- mean(predsstratCV==truthstratCV)
+  CVacc[i] <- mean(predsCV==truthCV)
+  
+  for(j in seq(along=allclasses)) {
+    allclassesscoresstratCV[j] <- allclassesscoresstratCV[j] + sum(predsstratCV==truthstratCV & truthstratCV==allclasses[j])
+    allclassesscoresCV[j] <- allclassesscoresCV[j] + sum(predsCV==truthCV & truthCV==allclasses[j])
+  }
+  
+  
+  cat(mean(predsstratCV==truthstratCV), "\n")
+  cat(mean(predsCV==truthCV), "\n")
+  
+}
+
+allclassesscoresstratCV
+
+#asdf
+
+sapply(allclasses, function(x) sum(datatrain$y==x))
+
+
+allclassesscoresstratCV <- allclassesscoresstratCV/sapply(allclasses, function(x) sum(datatrain$y==x))
+allclassesscoresCV <- allclassesscoresCV/sapply(allclasses, function(x) sum(datatrain$y==x))
+
+# stratCVaccs[count] <- mean(stratCVacc)
+# CVaccs[count] <- mean(CVacc)
+# 
+# cat(paste0("Iteration: ", count), "\n")
+
+  
+stratCVres <- data.frame(pred=predsstratCV, truth=truthstratCV)
+stratCVres$hit <- as.numeric(predsstratCV==truthstratCV)
+stratCVres$size <- sapply(stratCVres$truth, function(x) sum(datatrain$y==x))
+
+CVres <- data.frame(pred=predsCV, truth=truthCV)
+CVres$hit <- as.numeric(predsCV==truthCV)
+CVres$size <- sapply(CVres$truth, function(x) sum(datatrain$y==x))
+
+fix(CVres)
+
+boxplot(CVres$size ~ CVres$hit)
+boxplot(stratCVres$size ~ stratCVres$hit)
+
+# boxplot(stratCVres$size, CVres$size )
+
+
+fix(stratCVres)
+
+
+fix(stratCVres)
+
+
+
+
+
+
+
+
+
+ui <- cbind(foldCV, NA, foldstratCV)
+fix(ui)
+foldCV <- foldCV[order(rownames(foldCV)),]
+foldstratCV <- foldstratCV[order(rownames(foldstratCV)),]
+
+allclassesscoresstratCV <- allclassesscoresstratCV[order(names(allclassesscoresstratCV))]
+allclassesscoresCV <- allclassesscoresCV[order(names(allclassesscoresCV))]
+
+names(allclassesscoresstratCV)==rownames(foldCV)
+
+
+
+ui <- cbind(foldCV, allclassesscoresCV, NA, foldstratCV, allclassesscoresstratCV)
+fix(ui)
+
+ui <- cbind(foldCV, allclassesscoresCV*rowSums(foldCV), NA, foldstratCV, allclassesscoresstratCV*rowSums(foldstratCV))
+
+fix(ui)
 
 datatrain500 <- sim_data(n=500, coeflist=coeflist)
+
+
+# WICHTIG: IN DEN FOLGENDEN BESCHREIBUNGEN NICHT VERGESSEN, DASS ES HIER
+# SPEZIFISCH UM N=200 GEHT.
+# Die Rfs sgaen vermehrt die großen klassen richtig vorher.
+# strat liefert für manche große klassen mehr richtige prädiktionen.
+# dazu müssen mehr prädregeln richtige ergebnisse
+# liefern als bei regcv.
+# regcv hat den nachteil, dass wenn im testfold viele beobachtungen
+# einer großen klasse sind, sind im trainingsfold nur noch wenige beobcahtungen,
+# weshalb diese klasse dann nicht mehr so gut vorverhergesagt werden,
+# was wiederum schlecht ist, weil dann die vielen beobacthungen aus dem
+# testfold die eigentlich gut vorhergesagt werden können dann nicht mehr
+# gut vorhergesagt werden können. Umgekehrt, wenn im testfold nur wenige
+# beobachtungen der großen klasse sind, können diese zwar gut vorhergesagt
+# werden, weil dann im trainingsfold viele sind, aber das bringt nicht so viel,
+# weil die wenigen beobcahtungen im testfold dann die gesamt-performanceschätzung
+# nicht stark beeinflussen.
+# bei strat gibt es diese probleme nicht. Da funktionieren die prädregeln immer
+# etwa gleich gut bzgl der großen klassen (die ja die einzig relvanten sind),
+# weshalb am ende dann mehr beobachtugnen dieser klasse vorhergesagt werden.
+# das obige klärt warum, stratcv besssere performanzschätzungen liefert als
+# cv, aber warum überschätzt stratcv den fehler?
+# das könnte damit zusammenhängen, dass für n=200 viele klassen nicht in den
+# daten vorkommen, sondenr nur auf den testdaten, weshalb die testdatenperformanz
+# dann geringer ist. dass deshalb die performanz überschätz wird ist 'normal',
+# also liefert stratcv hier eigentlich gar kein 'gebiastes' verhalten.
+# dass das bei regcv nicht der fall ist, liegt einfach daran, dass regcv auf
+# die art wie oben beschrieben gebiast ist.
+
+
+
+
+
 
 
 # Define the task for the top-down classification rule:
