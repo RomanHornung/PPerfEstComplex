@@ -556,31 +556,44 @@ datatrain500 <- sim_data(n=500, coeflist=coeflist)
 
 # WICHTIG: IN DEN FOLGENDEN BESCHREIBUNGEN NICHT VERGESSEN, DASS ES HIER
 # SPEZIFISCH UM N=200 GEHT.
-# Die Rfs sgaen vermehrt die großen klassen richtig vorher.
-# strat liefert für manche große klassen mehr richtige prädiktionen.
-# dazu müssen mehr prädregeln richtige ergebnisse
+# Die Rfs sgaen vermehrt die gro?en klassen richtig vorher.
+# strat liefert f?r manche gro?e klassen mehr richtige pr?diktionen.
+# dazu m?ssen mehr pr?dregeln richtige ergebnisse
 # liefern als bei regcv.
 # regcv hat den nachteil, dass wenn im testfold viele beobachtungen
-# einer großen klasse sind, sind im trainingsfold nur noch wenige beobcahtungen,
+# einer gro?en klasse sind, sind im trainingsfold nur noch wenige beobcahtungen,
 # weshalb diese klasse dann nicht mehr so gut vorverhergesagt werden,
 # was wiederum schlecht ist, weil dann die vielen beobacthungen aus dem
-# testfold die eigentlich gut vorhergesagt werden können dann nicht mehr
-# gut vorhergesagt werden können. Umgekehrt, wenn im testfold nur wenige
-# beobachtungen der großen klasse sind, können diese zwar gut vorhergesagt
+# testfold die eigentlich gut vorhergesagt werden k?nnen dann nicht mehr
+# gut vorhergesagt werden k?nnen. Umgekehrt, wenn im testfold nur wenige
+# beobachtungen der gro?en klasse sind, k?nnen diese zwar gut vorhergesagt
 # werden, weil dann im trainingsfold viele sind, aber das bringt nicht so viel,
-# weil die wenigen beobcahtungen im testfold dann die gesamt-performanceschätzung
+# weil die wenigen beobcahtungen im testfold dann die gesamt-performancesch?tzung
 # nicht stark beeinflussen.
-# bei strat gibt es diese probleme nicht. Da funktionieren die prädregeln immer
-# etwa gleich gut bzgl der großen klassen (die ja die einzig relvanten sind),
+# bei strat gibt es diese probleme nicht. Da funktionieren die pr?dregeln immer
+# etwa gleich gut bzgl der gro?en klassen (die ja die einzig relvanten sind),
 # weshalb am ende dann mehr beobachtugnen dieser klasse vorhergesagt werden.
-# das obige klärt warum, stratcv besssere performanzschätzungen liefert als
-# cv, aber warum überschätzt stratcv den fehler?
-# das könnte damit zusammenhängen, dass für n=200 viele klassen nicht in den
+# das obige kl?rt warum, stratcv besssere performanzsch?tzungen liefert als
+# cv, aber warum ?bersch?tzt stratcv den fehler?
+# das k?nnte damit zusammenh?ngen, dass f?r n=200 viele klassen nicht in den
 # daten vorkommen, sondenr nur auf den testdaten, weshalb die testdatenperformanz
-# dann geringer ist. dass deshalb die performanz überschätz wird ist 'normal',
+# dann geringer ist. dass deshalb die performanz ?bersch?tz wird ist 'normal',
 # also liefert stratcv hier eigentlich gar kein 'gebiastes' verhalten.
 # dass das bei regcv nicht der fall ist, liegt einfach daran, dass regcv auf
-# die art wie oben beschrieben gebiast ist.
+# die art wie oben beschrieben gebiast ist. UPDATE: Habe mal ausprobiert, was
+# passiert wenn  man nur die Klassen in den Testdaten berÃ¼cksichtigt, die auch
+# in den Traininsdaten vorkommen. Das ist die testdatenperformanz zwar besser,
+# aber immmer noch kleiner als die von stratcv. Aber warum ist dann der stratcv-Fehler
+# grÃ¶ÃŸer als der testdatensatzfehler? Im Notfall, wenn wahre erklÃ¤rung nicht
+# finde muss ich schreiben, dass die wahre erklaerung unklar ist, dass wir aber zumindest
+# beobachtet haben, dass die testdatenperformanz besser ist, wenn wir nur die
+# klassen aus den trainingsdaten berÃ¼cksichtigen. AuÃŸerdem ist dann der fehler
+# fÃ¼r manche perfmaÃŸe wie spath nicht mehr unterschÃ¤tzt durch stratcv. NEUE *BESTE*
+# ERKLAERUNG: FÃ¼r kleines n ist die Klassenverteilung in den Trainingsdaten
+# durch Zufall ein bisschen ander als die wahre in den Testdaten. Auch dadurch kÃ¶nnte der Fehler
+# durch stratcv etwas Ã¼berschÃ¤tzt werden, weil da die Klassenverteilungen in
+# den testfolds kÃ¼nstlich gleich zu denen in der trainingfolds gemacht wird.
+
 
 
 
