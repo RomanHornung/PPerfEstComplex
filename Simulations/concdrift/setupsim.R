@@ -1,4 +1,4 @@
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 
@@ -12,6 +12,142 @@ plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
 lines(xseq, dnorm(xseq, mean=5, sd=1), col=2)
 lines(xseq, dnorm(xseq, mean=-3, sd=1), col=3)
 
+
+
+plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
+lines(xseq, dnorm(xseq, mean=2.5, sd=1), col=2)
+lines(xseq, dnorm(xseq, mean=-1.5, sd=1), col=3)
+
+
+
+
+
+plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
+lines(xseq, dnorm(xseq, mean=4, sd=1), col=2)
+lines(xseq, dnorm(xseq, mean=-2, sd=1), col=3)
+
+
+
+xseq <- seq(-8, 13, length=400)
+
+par(mfrow=c(4,2))
+par(mar=c(0, 0, 0, 0))
+n <- 8
+x1end <- 2
+x2end <- -1
+x1seq <- seq(0, x1end, length=n+1)[-1]
+x2seq <- seq(0, x2end, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=x1seq[i], sd=1), col=2)
+  lines(xseq, dnorm(xseq, mean=x2seq[i], sd=1), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
+
+
+
+par(mfrow=c(4,2))
+par(mar=c(0, 0, 0, 0))
+n <- 8
+x1end <- 4
+x2end <- -2
+x1seq <- seq(0, x1end, length=n+1)[-1]
+x2seq <- seq(0, x2end, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=x1seq[i], sd=1), col=2)
+  lines(xseq, dnorm(xseq, mean=x2seq[i], sd=1), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
+
+
+par(mfrow=c(4,2))
+par(mar=c(0, 0, 0, 0))
+n <- 8
+x1end <- 8
+x2end <- -4
+x1seq <- seq(0, x1end, length=n+1)[-1]
+x2seq <- seq(0, x2end, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=x1seq[i], sd=1), col=2)
+  lines(xseq, dnorm(xseq, mean=x2seq[i], sd=1), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
+
+
+
+
+
+xseq <- seq(-8, 13, length=400)
+
+par(mfrow=c(4,2))
+par(mar=c(0, 0, 0, 0))
+n <- 8
+ymeanend <- 6
+yvarend <- 6
+ymeanseq <- seq(0, ymeanend, length=n+1)[-1]
+yvarseq <- seq(1, yvarend, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=ymeanseq[i], sd=sqrt(yvarseq[i])), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
+
+par(mfrow=c(4,2))
+par(mar=c(0, 0, 0, 0))
+n <- 8
+ymeanend <- 3
+yvarend <- 3
+ymeanseq <- seq(0, ymeanend, length=n+1)[-1]
+yvarseq <- seq(1, yvarend, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=ymeanseq[i], sd=sqrt(yvarseq[i])), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
+
+par(mfrow=c(4,2))
+par(mar=c(0, 0, 0, 0))
+n <- 8
+ymeanend <- 1.5
+yvarend <- 1.5
+ymeanseq <- seq(0, ymeanend, length=n+1)[-1]
+yvarseq <- seq(1, yvarend, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=ymeanseq[i], sd=sqrt(yvarseq[i])), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
+
+
+
+
+
+
+
+
+
+
+
+lines(xseq, dnorm(xseq, mean=2, sd=1), col=2)
+lines(xseq, dnorm(xseq, mean=-0.5, sd=1), col=3)
+lines(xseq, dnorm(xseq, mean=-1, sd=1), col=3)
+
+
+
 # Parameter:
 
 # Only covariate shift vs. Covariate Shift & Label Shift (2)
@@ -22,10 +158,11 @@ lines(xseq, dnorm(xseq, mean=-3, sd=1), col=3)
 
 
 
-beta0 <- function(t) {
+
+getcoef <- function(t, startval, stopval) {
   
-  startval <- 0
-  stopval <- 5
+  # startval <- 0
+  # stopval <- 8
   tstart <- 0
   tend <- 1
   
@@ -37,6 +174,26 @@ beta0 <- function(t) {
 }
 
 
+
+
+# t <- 0.5
+
+
+sim_obs <- function(t, x1muend=8, x2muend=4, x3muend=-8,
+                    ymuend=6, yvarend=6) {
+  
+  x1 <- rnorm(1, mean=getcoef(t, startval=0, stopval=x1muend), sd=1)
+  x2 <- rnorm(1, mean=getcoef(t, startval=0, stopval=x2muend), sd=1)
+  x3 <- rnorm(1, mean=getcoef(t, startval=0, stopval=x3muend), sd=1)
+  
+  xvec <- c(x1, x2, x3, rnorm(2))
+  
+  y <- getcoef(t, startval=0, stopval=ymuend) + xvec[1]*2 + xvec[2]*(-1) + 
+    xvec[3]*2 + rnorm(1, mean=0, sd=sqrt(getcoef(t, startval=1, stopval=yvarend)))
+  
+  return(c(xvec, y))
+  
+}
 
 
 
