@@ -1,4 +1,4 @@
-setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 
@@ -90,8 +90,8 @@ xseq <- seq(-8, 13, length=400)
 par(mfrow=c(4,2))
 par(mar=c(0, 0, 0, 0))
 n <- 8
-ymeanend <- 6
-yvarend <- 6
+ymeanend <- 1.5
+yvarend <- 1.5
 ymeanseq <- seq(0, ymeanend, length=n+1)[-1]
 yvarseq <- seq(1, yvarend, length=n+1)[-1]
 for(i in seq(along=x1seq)) {
@@ -120,8 +120,8 @@ par(mfrow=c(1,1))
 par(mfrow=c(4,2))
 par(mar=c(0, 0, 0, 0))
 n <- 8
-ymeanend <- 1.5
-yvarend <- 1.5
+ymeanend <- 6
+yvarend <- 6
 ymeanseq <- seq(0, ymeanend, length=n+1)[-1]
 yvarseq <- seq(1, yvarend, length=n+1)[-1]
 for(i in seq(along=x1seq)) {
@@ -142,9 +142,12 @@ par(mfrow=c(1,1))
 
 
 
-lines(xseq, dnorm(xseq, mean=2, sd=1), col=2)
-lines(xseq, dnorm(xseq, mean=-0.5, sd=1), col=3)
-lines(xseq, dnorm(xseq, mean=-1, sd=1), col=3)
+
+# 
+# 
+# lines(xseq, dnorm(xseq, mean=2, sd=1), col=2)
+# lines(xseq, dnorm(xseq, mean=-0.5, sd=1), col=3)
+# lines(xseq, dnorm(xseq, mean=-1, sd=1), col=3)
 
 
 
@@ -189,17 +192,210 @@ sim_obs <- function(t, x1muend=8, x2muend=4, x3muend=-8,
   xvec <- c(x1, x2, x3, rnorm(2))
   
   y <- getcoef(t, startval=0, stopval=ymuend) + xvec[1]*2 + xvec[2]*(-1) + 
-    xvec[3]*2 + rnorm(1, mean=0, sd=sqrt(getcoef(t, startval=1, stopval=yvarend)))
+    xvec[3]*2 +rnorm(1, mean=0, sd=sqrt(getcoef(t, startval=1, stopval=yvarend)))
   
   return(c(xvec, y))
   
 }
 
 
+sim_dataset <- function(timepoints, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6) {
+  
+  dataset <- data.frame(t(sapply(timepoints, function(x) 
+    sim_obs(x, x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, 
+            ymuend=ymuend, yvarend=yvarend))))
+  names(dataset)[ncol(dataset)] <- "y"
+  
+  return(dataset)
+  
+}
+
+sim_dataset(n=100, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
 
 
 
 
+n <- 100
+
+
+sizes <- rep(floor(n/7), 7)
+if(n - 7*floor(n/7) > 0)
+  sizes[1:(n - 7*floor(n/7))] <- sizes[1:(n - 7*floor(n/7))] + 1
+train_sets1 <- lapply(cumsum(sizes[-length(sizes)]), function(x) 1:x)
+train_sets2 <- train_sets1[-length(train_sets1)]
+
+test_sets1 <- lapply(data.frame(rbind(cumsum(sizes[-length(sizes)]) + 1, cumsum(sizes)[-1])), function(x) x[1]:x[2])
+test_sets2 <- test_sets1[-1]
+
+
+
+
+
+
+
+
+seasonbreaks <- seq(0, 1, length=8)
+seasonbreaks <- c(seasonbreaks[1:6], (seasonbreaks[6]+seasonbreaks[7])/2, seasonbreaks[7], (seasonbreaks[7]+seasonbreaks[8])/2, seasonbreaks[8])
+
+
+
+datatrain <- sim_dataset(seq(seasonbreaks[1], seasonbreaks[6], length=n),
+                         x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
+datatest_1 <- sim_dataset(rep(seasonbreaks[6], 100000),
+                          x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
+datatest_2 <- sim_dataset(rep(seasonbreaks[7], 100000),
+                         x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
+datatest_3 <- sim_dataset(rep(seasonbreaks[8], 100000),
+                           x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
+datatest_4 <- sim_dataset(rep(seasonbreaks[9], 100000),
+                           x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
+datatest_5 <- sim_dataset(rep(seasonbreaks[10], 100000),
+                           x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
+
+require("mlr3")
+require("mlr3temporal")
+require("mlr3verse")
+# require("data.table")
+# 
+# mse_cv3 <- numeric(niter)
+# mse_cv3g <- numeric(niter)
+if (method=="lm")
+  learner_temp <- lrn("regr.lm")
+if (method=="rf")
+  learner_temp <- lrn("regr.ranger")
+
+# lgr::get_logger("mlr3")$set_threshold("warn")
+
+task <- as_task_regr(datatrain, target="y")
+# task_i$set_col_roles(cols="index", remove_from="feature")
+# subsamp0.8 <- rsmp("subsampling", repeats = 100, ratio = 0.8)
+
+
+
+cv <- rsmp("repeated_cv", repeats = 10, folds = 5)
+cv$instantiate(task)
+result_cv <- resample(task=task, learner=learner_temp, resampling=cv)
+mse_cv <- result_cv$aggregate(msr("regr.mse"))
+
+
+tempcv <- rsmp("custom")
+tempcv$instantiate(task, train_sets1, test_sets1)
+
+result_tempcv <- resample(task=task, learner=learner_temp, resampling=tempcv)
+mse_tempcv1 <- result_tempcv$aggregate(msr("regr.mse"))
+
+
+tempcv <- rsmp("custom")
+tempcv$instantiate(task, train_sets2, test_sets2)
+
+result_tempcv <- resample(task=task, learner=learner_temp, resampling=tempcv)
+mse_tempcv2 <- result_tempcv$aggregate(msr("regr.mse"))
+
+
+
+learner_temp$train(task, row_ids = train_sets1[[length(train_sets1)]])
+
+predictions <- learner_temp$predict(task, row_ids = test_sets1[[length(test_sets1)]])
+mse_tempholdout1 <- predictions$score(msr("regr.mse"))
+
+
+learner_temp$train(task, row_ids = train_sets2[[length(train_sets2)]])
+
+predictions <- learner_temp$predict(task, row_ids = test_sets2[[length(test_sets2)]])
+mse_tempholdout2 <- predictions$score(msr("regr.mse"))
+
+
+
+
+
+
+datacompl <- rbind(datatrain, datatest_1, datatest_2, datatest_3, datatest_4, datatest_5)
+ntrain <- nrow(datatrain); ntest_1 <- nrow(datatest_1); ntest_2 <- nrow(datatest_2)
+ntest_3 <- nrow(datatest_3); ntest_4 <- nrow(datatest_4); ntest_5 <- nrow(datatest_5)
+rm(datatrain, datatest_1, datatest_2, datatest_3, datatest_4, datatest_5); gc()
+
+
+# Define the task for the top-down classification rule:
+task <- as_task_regr(datacompl, target="y")
+
+
+learner_temp$train(task, row_ids = 1:ntrain)
+
+
+predictions <- learner_temp$predict(task, row_ids = (ntrain+1):(ntrain+ntest_1))
+mse_true_1 <- predictions$score(msr("regr.mse"))
+
+predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+1):(ntrain+ntest_1+ntest_2))
+mse_true_2 <- predictions$score(msr("regr.mse"))
+
+predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+ntest_2+1):(ntrain+ntest_1+ntest_2+ntest_3))
+mse_true_3 <- predictions$score(msr("regr.mse"))
+
+predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+ntest_2+ntest_3+1):(ntrain+ntest_1+ntest_2+ntest_3+ntest_4))
+mse_true_4 <- predictions$score(msr("regr.mse"))
+
+predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+ntest_2+ntest_3+ntest_4+1):(ntrain+ntest_1+ntest_2+ntest_3+ntest_4+ntest_5))
+mse_true_5 <- predictions$score(msr("regr.mse"))
+
+
+
+
+mse_cv
+mse_tempcv1
+mse_tempcv2
+mse_tempholdout1
+mse_tempholdout2
+mse_tempholdout1n
+mse_tempholdout2n
+
+
+mse_true_1
+mse_true_2
+mse_true_3
+mse_true_4
+mse_true_5
+
+
+
+
+mse_true1
+mse_true2
+
+predictions$score(msr("regr.mse"))
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  task_i$col_roles$group = "index"
+  cv3$instantiate(task_i)
+  result_cv3g <- resample(task=task_i, learner=learner_temp, resampling=cv3)
+  mse_cv3g[i] <- result_cv3g$aggregate(msr("regr.mse"))
+  
+
+  
+  
+result <- list(mse_cv3=mse_cv3, mse_cv3g=mse_cv3g)
+return(result)
+
+
+
+task = tsk("petrol")
+learner = lrn("forecast.VAR")
+resampling = rsmp("forecast_cv", folds = 5, fixed_window = FALSE)
+rr = resample(task, learner, resampling, store_models = TRUE)
+rr$aggregate(msr("forecast.mae"))
+
+
+
+
+head(dataset)
 
 
 
