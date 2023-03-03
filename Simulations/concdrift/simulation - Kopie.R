@@ -6,19 +6,20 @@ setwd("~/PPerfEstComplex")
 
 # Make table of settings:
 
+predmethod <- c("rf", "lm")
 repetition <- 1:100
 xtrend <- c("none", "weak", "medium", "strong")
 ytrend <- c("none", "weak", "medium", "strong")
 n <- c(100, 500, 1000, 3000)
 
-scenariogrid <- expand.grid(repetition=repetition, ytrend=ytrend, xtrend=xtrend, 
+scenariogrid <- expand.grid(predmethod=predmethod, repetition=repetition, ytrend=ytrend, xtrend=xtrend, 
   n=n, stringsAsFactors = TRUE)
 scenariogrid <- scenariogrid[,ncol(scenariogrid):1, drop=FALSE]
 
 set.seed(1234)
-seeds <- sample(1000:10000000, size=nrow(scenariogrid))#sample(1000:10000000, size=length(n)*length(ytrend)*length(xtrend)*length(repetition))
+seeds <- sample(1000:10000000, size=length(n)*length(ytrend)*length(xtrend)*length(repetition))
 
-scenariogrid$seed <- seeds#rep(seeds, each=length(predmethod))
+scenariogrid$seed <- rep(seeds, each=length(predmethod))
 
 
 set.seed(1234)

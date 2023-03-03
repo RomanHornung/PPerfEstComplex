@@ -12,7 +12,7 @@ metrics <- data.frame(random=sapply(results, function(x) x$mse_cv3),
 
 reorderind <- order(scenariogrid$fixed, scenariogrid$N, scenariogrid$ni,
                     scenariogrid$sdbinter, scenariogrid$sdbslope, scenariogrid$sdeps,
-                    scenariogrid$iter)
+                    scenariogrid$repetition)
 scengrid <- scenariogrid[reorderind,]
 metrics <- metrics[reorderind,]
 rownames(scengrid) <- rownames(metrics) <- NULL
@@ -26,9 +26,9 @@ results$grouped <- metrics$grouped
 head(results)
 
 results$sdeps <- results$sdeps^2
-namesbefore <- c("N", "ni", "sdbinter", "sdbslope", "sdeps", "fixed", "iter", "random", "grouped")
-if(ncol(results) == length(namesbefore) & all(names(results)==c("N", "ni", "sdbinter", "sdbslope", "sdeps", "fixed", "iter", "random", "grouped")))
-  names(results) <- c("N", "n_i", "var_intercept", "var_slope", "var_eps", "fixed", "iter", "random", "grouped")
+namesbefore <- c("N", "ni", "sdbinter", "sdbslope", "sdeps", "fixed", "repetition", "random", "grouped")
+if(ncol(results) == length(namesbefore) & all(names(results)==c("N", "ni", "sdbinter", "sdbslope", "sdeps", "fixed", "repetition", "random", "grouped")))
+  names(results) <- c("N", "n_i", "var_intercept", "var_slope", "var_eps", "fixed", "repetition", "random", "grouped")
 
 results$N <- factor(results$N)
 results$n_i <- factor(results$n_i)

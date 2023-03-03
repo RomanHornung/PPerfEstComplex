@@ -15,8 +15,8 @@ ni <- scenariogrid$ni[iter]
 sdbinter <- scenariogrid$sdbinter[iter] 
 sdbslope <- scenariogrid$sdbslope[iter] 
 sdeps <- scenariogrid$sdeps[iter] 
-fixed <- scenariogrid$fixed[iter] 
-iter <- scenariogrid$iter[iter] 
+fixed <- scenariogrid$fixed[iter]
+repetition <- scenariogrid$repetition[iter] 
 seed <- scenariogrid$seed[iter] 
   
   # Set seed:
@@ -113,12 +113,11 @@ simulation <- function(niter, N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sd
   require("mlr3verse")
   require("data.table")
   
-  mse_cv3 <- numeric(niter)
-  mse_cv3g <- numeric(niter)
-  if (method=="lm")
-  learner_temp <- lrn("regr.lm")
-  if (method=="rf")
-  learner_temp <- lrn("regr.ranger")
+  mse_cv3_rf <- mse_cv3_lm <- numeric(niter)
+  mse_cv3g_rf <- mse_cv3g_lm <- numeric(niter)
+  
+  learner_temp_rf <- lrn("regr.ranger")
+  learner_temp_lm <- lrn("regr.lm")
   
   # set_threads(learner_temp, n = 1)
   
@@ -131,18 +130,22 @@ simulation <- function(niter, N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sd
     task_i <- as_task_regr(simuldati, target="y")
     task_i$set_col_roles(cols="index", remove_from="feature")
     # subsamp0.8 <- rsmp("subsampling", repeats = 100, ratio = 0.8)
-    cv3 <- rsmp("repeated_cv", repeats = 10, folds = 3)
+    cv3 <- rsmp("repeated_cv", repeats = 10, folds = 5)
     cv3$instantiate(task_i)
-    result_cv3 <- resample(task=task_i, learner=learner_temp, resampling=cv3)
-    mse_cv3[i] <- result_cv3$aggregate(msr("regr.mse"))
+    result_cv3 <- resample(task=task_i, learner=learner_temp_rf, resampling=cv3)
+    mse_cv3_rf[i] <- result_cv3$aggregate(msr("regr.mse"))
+    result_cv3 <- resample(task=task_i, learner=learner_temp_lm, resampling=cv3)
+    mse_cv3_lm[i] <- result_cv3$aggregate(msr("regr.mse"))
     
     task_i$col_roles$group = "index"
     cv3$instantiate(task_i)
-    result_cv3g <- resample(task=task_i, learner=learner_temp, resampling=cv3)
-    mse_cv3g[i] <- result_cv3g$aggregate(msr("regr.mse"))
+    result_cv3g <- resample(task=task_i, learner=learner_temp_rf, resampling=cv3)
+    mse_cv3g_rf[i] <- result_cv3g$aggregate(msr("regr.mse"))
+    result_cv3g <- resample(task=task_i, learner=learner_temp_lm, resampling=cv3)
+    mse_cv3g_lm[i] <- result_cv3g$aggregate(msr("regr.mse"))
     
   }
-  result <- list(mse_cv3=mse_cv3, mse_cv3g=mse_cv3g)
+  result <- list(mse_cv3_rf=mse_cv3_rf, mse_cv3_lm=mse_cv3_lm, mse_cv3g_rf=mse_cv3g_rf, mse_cv3g_lm=mse_cv3g_lm)
   return(result)
   # save(result, file=paste("./Simulations/ClustData/Results/intermediate_results/N", N, "ni", ni, "beta", paste(beta, collapse=""), "sdbinter", sdbinter, "sdbslope", sdbslope, "sdeps", sdeps, fixed, ".RData", sep=""))
   

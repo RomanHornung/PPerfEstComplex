@@ -6,7 +6,7 @@ setwd("~/PPerfEstComplex")
 
 # Make table of settings:
 
-scenariogrid <- expand.grid(iter=1:100, fixed=c("none", "first", "second"), sdeps=c(1,0.5), sdbslope=c(1,0), sdbinter=c(1,0), ni=c(5,25), N=c(10,50), stringsAsFactors = TRUE)
+scenariogrid <- expand.grid(repetition=1:100, fixed=c("none", "first", "second"), sdeps=c(1,0.5), sdbslope=c(1,0), sdbinter=c(1,0), ni=c(5,25), N=c(10,50), stringsAsFactors = TRUE)
 scenariogrid <- scenariogrid[,ncol(scenariogrid):1, drop=FALSE]
 
 set.seed(1234)

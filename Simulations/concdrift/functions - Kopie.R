@@ -13,40 +13,33 @@ evaluatesetting <- function(iter) {
   xtrend <- scenariogrid$xtrend[iter] 
   ytrend <- scenariogrid$ytrend[iter] 
   n <- scenariogrid$n[iter] 
+  predmethod <- scenariogrid$predmethod[iter] 
   repetition <- scenariogrid$repetition[iter] 
   seed <- scenariogrid$seed[iter] 
   
-  if (xtrend == "none") {
+  if (xtrend == "none")
     x1muend <- 0; x2muend <- 0; x3muend <- 0
-  }
-  if (xtrend == "weak") {
+  if (xtrend == "weak")
     x1muend <- 2; x2muend <- 1; x3muend <- -2
-  }
-  if (xtrend == "medium") {
+  if (xtrend == "medium")
     x1muend <- 4; x2muend <- 2; x3muend <- -4
-  }
-  if (xtrend == "strong") {
+  if (xtrend == "strong")
     x1muend <- 8; x2muend <- 4; x3muend <- -8
-  }
   
-  if (xtrend == "none") {
+  if (xtrend == "none")
     ymuend <- 0; yvarend <- 1
-  }
-  if (xtrend == "weak") {
+  if (xtrend == "weak")
     ymuend <- 1.5; yvarend <- 1.5
-  }
-  if (xtrend == "medium") {
+  if (xtrend == "medium")
     ymuend <- 3; yvarend <- 3
-  }
-  if (xtrend == "strong") {
+  if (xtrend == "strong")
     ymuend <- 6; yvarend <- 6
-  }
   
   # Set seed:
   
   set.seed(seed)
   
-  res <- simulation(n=n, x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
+  res <- simulation(n=n, x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend, method=predmethod)
   
   
   save(res, file=paste0("./simulations/concdrift/results/intermediate_results/res_", iter, ".Rda"))
@@ -63,7 +56,13 @@ evaluatesetting <- function(iter) {
 
 
 
-simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6) {
+
+
+
+
+
+
+simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6, method="rf") {
   
   setwd(wd)
   
@@ -84,18 +83,17 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
                            x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, 
                            ymuend=ymuend, yvarend=yvarend)
   
-  
   require("mlr3")
   require("mlr3temporal")
   require("mlr3verse")
   
   
-  # Us random forests and linear models as learners:
+  # Determine the learner to use:
   
-  learner_temp_rf <- lrn("regr.ranger")
-  learner_temp_lm <- lrn("regr.lm")
-  
-
+  if (method=="lm")
+    learner_temp <- lrn("regr.lm")
+  if (method=="rf")
+    learner_temp <- lrn("regr.ranger")
   
   
   # Suppress warning from mlr3:
@@ -114,17 +112,15 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   
   cv <- rsmp("repeated_cv", repeats = 10, folds = 5)
   cv$instantiate(task)
-  result_cv <- resample(task=task, learner=learner_temp_rf, resampling=cv)
-  mse_cv_rf <- result_cv$aggregate(msr("regr.mse"))
-  result_cv <- resample(task=task, learner=learner_temp_lm, resampling=cv)
-  mse_cv_lm <- result_cv$aggregate(msr("regr.mse"))
-
+  result_cv <- resample(task=task, learner=learner_temp, resampling=cv)
+  mse_cv <- result_cv$aggregate(msr("regr.mse"))
+  
   
   
   # Time series CV - predict next season:
   
   # Determine the indices of the training and test sets for the times series CV:
-  sizes <- rep(floor(n/7), 7)
+    sizes <- rep(floor(n/7), 7)
   if(n - 7*floor(n/7) > 0)
     sizes[1:(n - 7*floor(n/7))] <- sizes[1:(n - 7*floor(n/7))] + 1
   train_setsTS_1s <- lapply(cumsum(sizes[-length(sizes)]), function(x) 1:x)
@@ -135,11 +131,9 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   TScv <- rsmp("custom")
   TScv$instantiate(task, train_setsTS_1s, test_setsTS_1s)
   
-  result_TScv <- resample(task=task, learner=learner_temp_rf, resampling=TScv)
-  mse_TScv_1s_rf <- result_TScv$aggregate(msr("regr.mse"))
-  result_TScv <- resample(task=task, learner=learner_temp_lm, resampling=TScv)
-  mse_TScv_1s_lm <- result_TScv$aggregate(msr("regr.mse"))
-
+  result_TScv <- resample(task=task, learner=learner_temp, resampling=TScv)
+  mse_TScv_1s <- result_TScv$aggregate(msr("regr.mse"))
+  
   
   
   # Time series CV - predict next season but one:
@@ -147,92 +141,64 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   TScv <- rsmp("custom")
   TScv$instantiate(task, train_setsTS_2s, test_setsTS_2s)
   
-    result_TScv <- resample(task=task, learner=learner_temp_rf, resampling=TScv)
-  mse_TScv_2s_rf <- result_TScv$aggregate(msr("regr.mse")) 
-  result_TScv <- resample(task=task, learner=learner_temp_lm, resampling=TScv)
-  mse_TScv_2s_lm <- result_TScv$aggregate(msr("regr.mse"))
-
+  result_TScv <- resample(task=task, learner=learner_temp, resampling=TScv)
+  mse_TScv_2s <- result_TScv$aggregate(msr("regr.mse"))
+  
   
   
   # Hold-out - predict last (i.e., seventh) season, train on first
   # to sixth season:
   
-  learner_temp_rf$train(task, row_ids = train_setsTS_1s[[length(train_setsTS_1s)]])
+  learner_temp$train(task, row_ids = train_setsTS_1s[[length(train_setsTS_1s)]])
   
-  predictions <- learner_temp_rf$predict(task, row_ids = test_setsTS_1s[[length(test_setsTS_1s)]])
-  mse_TSholdout_1s_rf <- predictions$score(msr("regr.mse"))
+  predictions <- learner_temp$predict(task, row_ids = test_setsTS_1s[[length(test_setsTS_1s)]])
+  mse_TSholdout_1s <- predictions$score(msr("regr.mse"))
   
-  learner_temp_lm$train(task, row_ids = train_setsTS_1s[[length(train_setsTS_1s)]])
-  
-  predictions <- learner_temp_lm$predict(task, row_ids = test_setsTS_1s[[length(test_setsTS_1s)]])
-  mse_TSholdout_1s_lm <- predictions$score(msr("regr.mse"))
-
   
   
   # Hold-out - predict last (i.e., seventh) season, train on first
   # to fifth season:
-    
-  learner_temp_rf$train(task, row_ids = train_setsTS_2s[[length(train_setsTS_2s)]])
   
-  predictions <- learner_temp_rf$predict(task, row_ids = test_setsTS_2s[[length(test_setsTS_2s)]])
-  mse_TSholdout_2s_rf <- predictions$score(msr("regr.mse"))
+  learner_temp$train(task, row_ids = train_setsTS_2s[[length(train_setsTS_2s)]])
   
-  learner_temp_lm$train(task, row_ids = train_setsTS_2s[[length(train_setsTS_2s)]])
-  
-  predictions <- learner_temp_lm$predict(task, row_ids = test_setsTS_2s[[length(test_setsTS_2s)]])
-  mse_TSholdout_2s_lm <- predictions$score(msr("regr.mse"))
-
+  predictions <- learner_temp$predict(task, row_ids = test_setsTS_2s[[length(test_setsTS_2s)]])
+  mse_TSholdout_2s <- predictions$score(msr("regr.mse"))
   
   
   # asdf
   train_task <- as_task_regr(datatrain, target = "y")
-  learner_temp_rf$train(train_task)
-  learner_temp_lm$train(train_task)
-
+  learner_temp$train(train_task)
   
-  mse_true_lm <- c()
-  mse_true_rf <- c()
+  mse_true <- c()
   
   for(count in 1:5) {
     
-    datatest <- sim_dataset(rep(seasonbreaks[count+5], 200000),
+    datatest <- sim_dataset(rep(seasonbreaks[count+5], 20000),
                             x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
     
     test_task <- as_task_regr(datatest, target = "y")
-    
-    predictions <- learner_temp_rf$predict(test_task)
-    mse_true_rf[count] <- predictions$score(msr("regr.mse"))
-    
-    predictions <- learner_temp_lm$predict(test_task)
-    mse_true_lm[count] <- predictions$score(msr("regr.mse"))
+    predictions <- learner_temp$predict(test_task)
+    mse_true[count] <- predictions$score(msr("regr.mse"))
     
   }
   
-  mse_true_endlast_lm <- mse_true_lm[1]
-  mse_true_mid1fu_lm <- mse_true_lm[2]
-  mse_true_end1fu_lm <- mse_true_lm[3]
-  mse_true_mid2fu_lm <- mse_true_lm[4]
-  mse_true_end2fu_lm <- mse_true_lm[5]
-  
-  mse_true_endlast_rf <- mse_true_rf[1]
-  mse_true_mid1fu_rf <- mse_true_rf[2]
-  mse_true_end1fu_rf <- mse_true_rf[3]
-  mse_true_mid2fu_rf <- mse_true_rf[4]
-  mse_true_end2fu_rf <- mse_true_rf[5]
+  mse_true_endlast <- mse_true[1]
+  mse_true_mid1fu <- mse_true[2]
+  mse_true_end1fu <- mse_true[3]
+  mse_true_mid2fu <- mse_true[4]
+  mse_true_end2fu <- mse_true[5]
   
   
-  res <- list(mse_cv_rf=mse_cv_rf, mse_cv_lm=mse_cv_lm, mse_TScv_1s_rf=mse_TScv_1s_rf, mse_TScv_1s_lm=mse_TScv_1s_lm, mse_TScv_2s_rf=mse_TScv_2s_rf, mse_TScv_2s_lm=mse_TScv_2s_lm, 
-              mse_TSholdout_1s_rf=mse_TSholdout_1s_rf, mse_TSholdout_1s_lm=mse_TSholdout_1s_lm, mse_TSholdout_2s_rf=mse_TSholdout_2s_rf, mse_TSholdout_2s_lm=mse_TSholdout_2s_lm, 
-              mse_true_endlast_rf=mse_true_endlast_rf, mse_true_endlast_lm=mse_true_endlast_lm, mse_true_mid1fu_rf=mse_true_mid1fu_rf, mse_true_mid1fu_lm=mse_true_mid1fu_lm, 
-              mse_true_end1fu_rf=mse_true_end1fu_rf, mse_true_end1fu_lm=mse_true_end1fu_lm, mse_true_mid2fu_rf=mse_true_mid2fu_rf, mse_true_mid2fu_lm=mse_true_mid2fu_lm, 
-              mse_true_end2fu_rf=mse_true_end2fu_rf, mse_true_end2fu_lm=mse_true_end2fu_lm)
+  
+  res <- list(mse_cv=mse_cv, mse_TScv_1s=mse_TScv_1s, mse_TScv_2s=mse_TScv_2s, 
+              mse_TSholdout_1s=mse_TSholdout_1s, mse_TSholdout_2s=mse_TSholdout_2s, 
+              mse_true_endlast=mse_true_endlast, mse_true_mid1fu=mse_true_mid1fu, 
+              mse_true_end1fu=mse_true_end1fu, mse_true_mid2fu=mse_true_mid2fu, 
+              mse_true_end2fu=mse_true_end2fu)
   
   return(res)
   
 }
-
-
-
 
 
 

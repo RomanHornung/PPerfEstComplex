@@ -4,27 +4,27 @@ setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 
-xseq <- seq(-15, 10, length=400)
-
-
-
-plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
-lines(xseq, dnorm(xseq, mean=5, sd=1), col=2)
-lines(xseq, dnorm(xseq, mean=-3, sd=1), col=3)
-
-
-
-plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
-lines(xseq, dnorm(xseq, mean=2.5, sd=1), col=2)
-lines(xseq, dnorm(xseq, mean=-1.5, sd=1), col=3)
-
-
-
-
-
-plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
-lines(xseq, dnorm(xseq, mean=4, sd=1), col=2)
-lines(xseq, dnorm(xseq, mean=-2, sd=1), col=3)
+# xseq <- seq(-15, 10, length=400)
+# 
+# 
+# 
+# plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
+# lines(xseq, dnorm(xseq, mean=5, sd=1), col=2)
+# lines(xseq, dnorm(xseq, mean=-3, sd=1), col=3)
+# 
+# 
+# 
+# plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
+# lines(xseq, dnorm(xseq, mean=2.5, sd=1), col=2)
+# lines(xseq, dnorm(xseq, mean=-1.5, sd=1), col=3)
+# 
+# 
+# 
+# 
+# 
+# plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
+# lines(xseq, dnorm(xseq, mean=4, sd=1), col=2)
+# lines(xseq, dnorm(xseq, mean=-2, sd=1), col=3)
 
 
 
@@ -210,12 +210,13 @@ sim_dataset <- function(timepoints, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, 
   
 }
 
-sim_dataset(n=100, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
 
 
 
 
-n <- 100
+set.seed(1234)
+
+n <- 1000
 
 
 sizes <- rep(floor(n/7), 7)
@@ -230,38 +231,24 @@ test_sets2 <- test_sets1[-1]
 
 
 
-
-
-
-
 seasonbreaks <- seq(0, 1, length=8)
 seasonbreaks <- c(seasonbreaks[1:6], (seasonbreaks[6]+seasonbreaks[7])/2, seasonbreaks[7], (seasonbreaks[7]+seasonbreaks[8])/2, seasonbreaks[8])
 
 
 
+x1muend <- 2; x2muend <- 1; x3muend <- -2; ymuend <- 1.5; yvarend <- 1.5
+
+
 datatrain <- sim_dataset(seq(seasonbreaks[1], seasonbreaks[6], length=n),
-                         x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
-datatest_1 <- sim_dataset(rep(seasonbreaks[6], 100000),
-                          x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
-datatest_2 <- sim_dataset(rep(seasonbreaks[7], 100000),
-                         x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
-datatest_3 <- sim_dataset(rep(seasonbreaks[8], 100000),
-                           x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
-datatest_4 <- sim_dataset(rep(seasonbreaks[9], 100000),
-                           x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
-datatest_5 <- sim_dataset(rep(seasonbreaks[10], 100000),
-                           x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
+                         x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
 
 require("mlr3")
 require("mlr3temporal")
 require("mlr3verse")
-# require("data.table")
-# 
-# mse_cv3 <- numeric(niter)
-# mse_cv3g <- numeric(niter)
-if (method=="lm")
-  learner_temp <- lrn("regr.lm")
-if (method=="rf")
+
+# if (method=="lm")
+#   learner_temp <- lrn("regr.lm")
+# if (method=="rf")
   learner_temp <- lrn("regr.ranger")
 
 # lgr::get_logger("mlr3")$set_threshold("warn")
@@ -272,11 +259,15 @@ task <- as_task_regr(datatrain, target="y")
 
 
 
+# Regular CV:
+
 cv <- rsmp("repeated_cv", repeats = 10, folds = 5)
 cv$instantiate(task)
 result_cv <- resample(task=task, learner=learner_temp, resampling=cv)
 mse_cv <- result_cv$aggregate(msr("regr.mse"))
 
+
+# One-season look ahead temporal CV:
 
 tempcv <- rsmp("custom")
 tempcv$instantiate(task, train_sets1, test_sets1)
@@ -284,6 +275,9 @@ tempcv$instantiate(task, train_sets1, test_sets1)
 result_tempcv <- resample(task=task, learner=learner_temp, resampling=tempcv)
 mse_tempcv1 <- result_tempcv$aggregate(msr("regr.mse"))
 
+
+
+# Two-seasons look ahead temporal CV:
 
 tempcv <- rsmp("custom")
 tempcv$instantiate(task, train_sets2, test_sets2)
@@ -293,11 +287,16 @@ mse_tempcv2 <- result_tempcv$aggregate(msr("regr.mse"))
 
 
 
+# Hold-out: one season look-ahead:
+
 learner_temp$train(task, row_ids = train_sets1[[length(train_sets1)]])
 
 predictions <- learner_temp$predict(task, row_ids = test_sets1[[length(test_sets1)]])
 mse_tempholdout1 <- predictions$score(msr("regr.mse"))
 
+
+
+# Hold-out: two seasons look-ahead:
 
 learner_temp$train(task, row_ids = train_sets2[[length(train_sets2)]])
 
@@ -308,52 +307,555 @@ mse_tempholdout2 <- predictions$score(msr("regr.mse"))
 
 
 
+train_task <- as_task_regr(datatrain, target = "y")
+learner_temp$train(train_task)
 
-datacompl <- rbind(datatrain, datatest_1, datatest_2, datatest_3, datatest_4, datatest_5)
-ntrain <- nrow(datatrain); ntest_1 <- nrow(datatest_1); ntest_2 <- nrow(datatest_2)
-ntest_3 <- nrow(datatest_3); ntest_4 <- nrow(datatest_4); ntest_5 <- nrow(datatest_5)
-rm(datatrain, datatest_1, datatest_2, datatest_3, datatest_4, datatest_5); gc()
+mse_true <- c()
 
+for(count in 1:5) {
+  
+  # End of last training season:
+  datatest <- sim_dataset(rep(seasonbreaks[count+5], 100000),
+                          x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
 
-# Define the task for the top-down classification rule:
-task <- as_task_regr(datacompl, target="y")
-
-
-learner_temp$train(task, row_ids = 1:ntrain)
-
-
-predictions <- learner_temp$predict(task, row_ids = (ntrain+1):(ntrain+ntest_1))
-mse_true_1 <- predictions$score(msr("regr.mse"))
-
-predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+1):(ntrain+ntest_1+ntest_2))
-mse_true_2 <- predictions$score(msr("regr.mse"))
-
-predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+ntest_2+1):(ntrain+ntest_1+ntest_2+ntest_3))
-mse_true_3 <- predictions$score(msr("regr.mse"))
-
-predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+ntest_2+ntest_3+1):(ntrain+ntest_1+ntest_2+ntest_3+ntest_4))
-mse_true_4 <- predictions$score(msr("regr.mse"))
-
-predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+ntest_2+ntest_3+ntest_4+1):(ntrain+ntest_1+ntest_2+ntest_3+ntest_4+ntest_5))
-mse_true_5 <- predictions$score(msr("regr.mse"))
+  test_task <- as_task_regr(datatest, target = "y")
+  predictions <- learner_temp$predict(test_task)
+  mse_true[count] <- predictions$score(msr("regr.mse"))
+  
+}
 
 
+# mse_true <- c()
+# 
+# for(count in 1:5) {
+#   
+#   # End of last training season:
+#   datatest <- sim_dataset(rep(seasonbreaks[count+5], 100000),
+#                           x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
+#   
+#   datacompl <- rbind(datatrain, datatest)
+#   ntrain <- nrow(datatrain)
+#   
+#   # Define the task for the top-down classification rule:
+#   task <- as_task_regr(datacompl, target="y")
+#   
+#   
+#   # Learn on the whole dataset:
+#   learner_temp$train(task, row_ids = 1:ntrain)
+#   
+#   
+#   predictions <- learner_temp$predict(task, row_ids = (ntrain+1):nrow(datacompl))
+#   mse_true[count] <- predictions$score(msr("regr.mse"))
+#   
+# }
 
 
+
+
+
+
+
+# datacompl <- rbind(datatrain, datatest_1, datatest_2, datatest_3, datatest_4, datatest_5)
+# ntrain <- nrow(datatrain); ntest_1 <- nrow(datatest_1); ntest_2 <- nrow(datatest_2)
+# ntest_3 <- nrow(datatest_3); ntest_4 <- nrow(datatest_4); ntest_5 <- nrow(datatest_5)
+# rm(datatrain, datatest_1, datatest_2, datatest_3, datatest_4, datatest_5); gc()
+# 
+# 
+# # Define the task for the top-down classification rule:
+# task <- as_task_regr(datacompl, target="y")
+# 
+# 
+# # Learn on the whole dataset:
+# learner_temp$train(task, row_ids = 1:ntrain)
+# 
+# 
+# predictions <- learner_temp$predict(task, row_ids = (ntrain+1):(ntrain+ntest_1))
+# mse_true_1 <- predictions$score(msr("regr.mse"))
+# 
+# predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+1):(ntrain+ntest_1+ntest_2))
+# mse_true_2 <- predictions$score(msr("regr.mse"))
+# 
+# predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+ntest_2+1):(ntrain+ntest_1+ntest_2+ntest_3))
+# mse_true_3 <- predictions$score(msr("regr.mse"))
+# 
+# predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+ntest_2+ntest_3+1):(ntrain+ntest_1+ntest_2+ntest_3+ntest_4))
+# mse_true_4 <- predictions$score(msr("regr.mse"))
+# 
+# predictions <- learner_temp$predict(task, row_ids = (ntrain+ntest_1+ntest_2+ntest_3+ntest_4+1):(ntrain+ntest_1+ntest_2+ntest_3+ntest_4+ntest_5))
+# mse_true_5 <- predictions$score(msr("regr.mse"))
+
+
+
+# Vorhere Vorgehensweise:
+
+# > # Regular CV:
+#   > mse_cv
+# regr.mse 
+# 1.703663 
+# > # One-season look ahead temporal CV:
+#   > mse_tempcv1
+# regr.mse 
+# 2.116256 
+# > # Two-seasons look ahead temporal CV:
+#   > mse_tempcv2
+# regr.mse 
+# 2.465029 
+# > # Hold-out: one season look-ahead:
+#   > mse_tempholdout1
+# regr.mse 
+# 2.156121 
+# > # Hold-out: two seasons look-ahead:
+#   > mse_tempholdout2
+# regr.mse 
+# 2.419771 
+# > 
+#   > 
+#   > 
+#   > # True MSE end of last training season:
+#   > mse_true_1
+# regr.mse 
+# 2.111301 
+# > # True MSE mid of first follow-up season:
+#   > mse_true_2
+# regr.mse 
+# 2.302465 
+# > # True MSE end first follow-up season:
+#   > mse_true_3
+# regr.mse 
+# 2.537849 
+# > # True MSE mid of second follow-up season:
+#   > mse_true_4
+# regr.mse 
+# 2.79865 
+# > # True MSE end of second follow-up season:
+#   > mse_true_5
+# regr.mse 
+# 3.164249 
+
+
+
+# Regular CV:
 mse_cv
+# One-season look ahead temporal CV:
 mse_tempcv1
+# Two-seasons look ahead temporal CV:
 mse_tempcv2
+# Hold-out: one season look-ahead:
 mse_tempholdout1
+# Hold-out: two seasons look-ahead:
 mse_tempholdout2
-mse_tempholdout1n
-mse_tempholdout2n
 
 
+
+# True MSE end of last training season:
 mse_true_1
+# True MSE mid of first follow-up season:
 mse_true_2
+# True MSE end first follow-up season:
 mse_true_3
+# True MSE mid of second follow-up season:
 mse_true_4
+# True MSE end of second follow-up season:
 mse_true_5
+
+
+
+
+
+
+
+
+set.seed(1234)
+
+n <- 1000
+
+
+sizes <- rep(floor(n/7), 7)
+if(n - 7*floor(n/7) > 0)
+  sizes[1:(n - 7*floor(n/7))] <- sizes[1:(n - 7*floor(n/7))] + 1
+train_sets1 <- lapply(cumsum(sizes[-length(sizes)]), function(x) 1:x)
+train_sets2 <- train_sets1[-length(train_sets1)]
+
+test_sets1 <- lapply(data.frame(rbind(cumsum(sizes[-length(sizes)]) + 1, cumsum(sizes)[-1])), function(x) x[1]:x[2])
+test_sets2 <- test_sets1[-1]
+
+
+
+
+seasonbreaks <- seq(0, 1, length=8)
+seasonbreaks <- c(seasonbreaks[1:6], (seasonbreaks[6]+seasonbreaks[7])/2, seasonbreaks[7], (seasonbreaks[7]+seasonbreaks[8])/2, seasonbreaks[8])
+
+
+
+x1muend <- 8; x2muend <- 4; x3muend <- -8; ymuend <- 6; yvarend <- 6
+
+
+datatrain <- sim_dataset(seq(seasonbreaks[1], seasonbreaks[6], length=n),
+                         x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
+
+
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+library("ranger")
+trainind <- 1:round((6/7)*n)
+testind <- (round((6/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((5/7)*n)
+testind <- (round((5/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((4/7)*n)
+testind <- (round((4/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+
+
+library("ranger")
+trainind <- 1:round((6/7)*n)
+testind <- (round((6/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((5/7)*n)
+testind <- (round((5/7)*n)+1):round((6/7)*n)
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((4/7)*n)
+testind <- (round((4/7)*n)+1):round((5/7)*n)
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+
+
+
+
+
+
+
+
+set.seed(1234)
+
+n <- 1000
+
+
+sizes <- rep(floor(n/7), 7)
+if(n - 7*floor(n/7) > 0)
+  sizes[1:(n - 7*floor(n/7))] <- sizes[1:(n - 7*floor(n/7))] + 1
+train_sets1 <- lapply(cumsum(sizes[-length(sizes)]), function(x) 1:x)
+train_sets2 <- train_sets1[-length(train_sets1)]
+
+test_sets1 <- lapply(data.frame(rbind(cumsum(sizes[-length(sizes)]) + 1, cumsum(sizes)[-1])), function(x) x[1]:x[2])
+test_sets2 <- test_sets1[-1]
+
+
+
+
+seasonbreaks <- seq(0, 1, length=8)
+seasonbreaks <- c(seasonbreaks[1:6], (seasonbreaks[6]+seasonbreaks[7])/2, seasonbreaks[7], (seasonbreaks[7]+seasonbreaks[8])/2, seasonbreaks[8])
+
+
+
+x1muend <- 4; x2muend <- 2; x3muend <- -4; ymuend <- 3; yvarend <- 3
+
+
+datatrain <- sim_dataset(seq(seasonbreaks[1], seasonbreaks[6], length=n),
+                         x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
+
+
+
+
+library("ranger")
+trainind <- 1:round((6/7)*n)
+testind <- (round((6/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((5/7)*n)
+testind <- (round((5/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((4/7)*n)
+testind <- (round((4/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+
+
+library("ranger")
+trainind <- 1:round((6/7)*n)
+testind <- (round((6/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((5/7)*n)
+testind <- (round((5/7)*n)+1):round((6/7)*n)
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((4/7)*n)
+testind <- (round((4/7)*n)+1):round((5/7)*n)
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+
+
+
+
+
+set.seed(1234)
+
+n <- 1000
+
+
+sizes <- rep(floor(n/7), 7)
+if(n - 7*floor(n/7) > 0)
+  sizes[1:(n - 7*floor(n/7))] <- sizes[1:(n - 7*floor(n/7))] + 1
+train_sets1 <- lapply(cumsum(sizes[-length(sizes)]), function(x) 1:x)
+train_sets2 <- train_sets1[-length(train_sets1)]
+
+test_sets1 <- lapply(data.frame(rbind(cumsum(sizes[-length(sizes)]) + 1, cumsum(sizes)[-1])), function(x) x[1]:x[2])
+test_sets2 <- test_sets1[-1]
+
+
+
+
+seasonbreaks <- seq(0, 1, length=8)
+seasonbreaks <- c(seasonbreaks[1:6], (seasonbreaks[6]+seasonbreaks[7])/2, seasonbreaks[7], (seasonbreaks[7]+seasonbreaks[8])/2, seasonbreaks[8])
+
+
+
+x1muend <- 2; x2muend <- 1; x3muend <- -2; ymuend <- 1.5; yvarend <- 1.5
+
+
+datatrain <- sim_dataset(seq(seasonbreaks[1], seasonbreaks[6], length=n),
+                         x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
+
+
+
+
+library("ranger")
+trainind <- 1:round((6/7)*n)
+testind <- (round((6/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((5/7)*n)
+testind <- (round((5/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((4/7)*n)
+testind <- (round((4/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+
+
+library("ranger")
+trainind <- 1:round((6/7)*n)
+testind <- (round((6/7)*n)+1):n
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((5/7)*n)
+testind <- (round((5/7)*n)+1):round((6/7)*n)
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+trainind <- 1:round((4/7)*n)
+testind <- (round((4/7)*n)+1):round((5/7)*n)
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+cor(predict(tempobj, data=datatrain[testind,])$predictions, datatrain[testind,]$y)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+library("ranger")
+trainind <- 1:round((6/7)*n)
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[-trainind,])$predictions, datatrain[-trainind,]$y)
+cor(predict(tempobj, data=datatrain[-trainind,])$predictions, datatrain[-trainind,]$y)
+
+
+trainind <- 1:round((5/7)*n)
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[-trainind,])$predictions, datatrain[-trainind,]$y)
+cor(predict(tempobj, data=datatrain[-trainind,])$predictions, datatrain[-trainind,]$y)
+
+
+trainind <- 1:round((4/7)*n)
+tempobj <- ranger(y ~ ., data=datatrain[trainind,], num.trees=1000)
+
+plot(predict(tempobj, data=datatrain[-trainind,])$predictions, datatrain[-trainind,]$y)
+cor(predict(tempobj, data=datatrain[-trainind,])$predictions, datatrain[-trainind,]$y)
+
+
+
+
+
+
+
+
+
+#asdf
+
+simdataperm <- simdata
+
+simdataperm$index <- sample(simdataperm$index)
+
+ypredsrf <- rep(NA, nrow(simdataperm))
+
+for(i in seq(along=unique(simdataperm$index))) {
+  model <- ranger(y ~ ., data=simdataperm[simdataperm$index!=i,-ncol(simdataperm)])
+  ypredsrf[simdataperm$index==i] <- predict(model, data=simdataperm[simdataperm$index==i,-ncol(simdataperm)])$predictions
+}
+
+plot(simdataperm$y, ypredsrf)
+cor(simdataperm$y, ypredsrf)
+
+
+
+
+
+
+
+
+
+
+
+
+# > # Regular CV:
+#   > mse_cv
+# regr.mse 
+# 6.102252 
+# > # One-season look ahead temporal CV:
+#   > mse_tempcv1
+# regr.mse 
+# 8.247698 
+# > # Two-seasons look ahead temporal CV:
+#   > mse_tempcv2
+# regr.mse 
+# 8.894035 
+# > # Hold-out: one season look-ahead:
+#   > mse_tempholdout1
+# regr.mse 
+# 8.09707 
+# > # Hold-out: two seasons look-ahead:
+#   > mse_tempholdout2
+# regr.mse 
+# 10.45531 
+# > 
+#   > 
+#   > 
+#   > # True MSE end of last training season:
+#   > mse_true_1
+# regr.mse 
+# 9.928108 
+# > # True MSE mid of first follow-up season:
+#   > mse_true_2
+# regr.mse 
+# 11.80236 
+# > # True MSE end first follow-up season:
+#   > mse_true_3
+# regr.mse 
+# 14.05882 
+# > # True MSE mid of second follow-up season:
+#   > mse_true_4
+# regr.mse 
+# 16.52623 
+# > # True MSE end of second follow-up season:
+#   > mse_true_5
+# regr.mse 
+# 18.58472
+
+
+
+# Als n?chstes Schauen, wie die singalst?rker ist, auch zu verschiedenen Zieptunkten.
+# Und f?r die verschieden Starken signale
+
+
+
 
 
 
@@ -364,10 +866,6 @@ mse_true2
 predictions$score(msr("regr.mse"))
 
 
-
-  
-  
-  
   
   
   
