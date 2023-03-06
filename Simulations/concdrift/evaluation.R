@@ -1,47 +1,83 @@
-setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 # Load and pre-process the results:
 ###################################
 
-load("./Simulations/ClustData/Results/intermediate_results/scenariogrid.Rda")
-load("./Simulations/ClustData/Results/intermediate_results/results.Rda")
-
-metrics <- data.frame(random=sapply(results, function(x) x$mse_cv3), 
-                      grouped=sapply(results, function(x) x$mse_cv3g))
-
-reorderind <- order(scenariogrid$fixed, scenariogrid$N, scenariogrid$ni,
-                    scenariogrid$sdbinter, scenariogrid$sdbslope, scenariogrid$sdeps,
-                    scenariogrid$iter)
-scengrid <- scenariogrid[reorderind,]
-metrics <- metrics[reorderind,]
-rownames(scengrid) <- rownames(metrics) <- NULL
+load("./Simulations/concdrift/results/intermediate_results/scenariogrid.Rda")
+load("./Simulations/concdrift/results/intermediate_results/results.Rda")
 
 
-results <- scengrid
-results$seed <- NULL
-results$random <- metrics$random
-results$grouped <- metrics$grouped
 
-head(results)
+# mse_cv_rf, mse_cv_lm, mse_TScv_1s_rf, mse_TScv_1s_lm, mse_TScv_2s_rf, mse_TScv_2s_lm, mse_TSholdout_1s_rf, mse_TSholdout_1s_lm, mse_TSholdout_2s_rf, mse_TSholdout_2s_lm
 
-results$sdeps <- results$sdeps^2
-namesbefore <- c("N", "ni", "sdbinter", "sdbslope", "sdeps", "fixed", "iter", "random", "grouped")
-if(ncol(results) == length(namesbefore) & all(names(results)==c("N", "ni", "sdbinter", "sdbslope", "sdeps", "fixed", "iter", "random", "grouped")))
-  names(results) <- c("N", "n_i", "var_intercept", "var_slope", "var_eps", "fixed", "iter", "random", "grouped")
 
-results$N <- factor(results$N)
-results$n_i <- factor(results$n_i)
-results$var_intercept <- factor(results$var_intercept)
-results$var_slope <- factor(results$var_slope)
-results$var_eps <- factor(results$var_eps)
-results$fixed <- factor(results$fixed)
+# mse_true_endlast_rf, mse_true_endlast_lm, mse_true_mid1fu_rf, mse_true_mid1fu_lm, mse_true_end1fu_rf, mse_true_end1fu_lm, mse_true_mid2fu_rf, mse_true_mid2fu_lm, mse_true_end2fu_rf, mse_true_end2fu_lm
 
-results <- reshape(results, varying=c("random", "grouped"),
-                   v.names="CV_err", 
-                   timevar="type", times=c("random", "grouped"),
+reorderind <- order(scenariogrid$xtrend, scenariogrid$ytrend, scenariogrid$n, scenariogrid$repetition)
+scenariogrid <- scenariogrid[reorderind,]
+results <- results[reorderind]
+
+head(scenariogrid)
+
+length(results[[1]])
+
+res <- scenariogrid
+res$seed <- NULL
+
+for(i in seq(along=ui))
+  cat(ui[i], "\n")
+
+
+ui <- paste0("res$", names(results[[1]]), " <- sapply(results, function(x) x$", names(results[[1]]), ")")
+
+res$mse_cv_rf <- sapply(results, function(x) x$mse_cv_rf) 
+res$mse_cv_lm <- sapply(results, function(x) x$mse_cv_lm) 
+res$mse_TScv_1s_rf <- sapply(results, function(x) x$mse_TScv_1s_rf) 
+res$mse_TScv_1s_lm <- sapply(results, function(x) x$mse_TScv_1s_lm) 
+res$mse_TScv_2s_rf <- sapply(results, function(x) x$mse_TScv_2s_rf) 
+res$mse_TScv_2s_lm <- sapply(results, function(x) x$mse_TScv_2s_lm) 
+res$mse_TSholdout_1s_rf <- sapply(results, function(x) x$mse_TSholdout_1s_rf) 
+res$mse_TSholdout_1s_lm <- sapply(results, function(x) x$mse_TSholdout_1s_lm) 
+res$mse_TSholdout_2s_rf <- sapply(results, function(x) x$mse_TSholdout_2s_rf) 
+res$mse_TSholdout_2s_lm <- sapply(results, function(x) x$mse_TSholdout_2s_lm) 
+res$mse_true_endlast_rf <- sapply(results, function(x) x$mse_true_endlast_rf) 
+res$mse_true_endlast_lm <- sapply(results, function(x) x$mse_true_endlast_lm) 
+res$mse_true_mid1fu_rf <- sapply(results, function(x) x$mse_true_mid1fu_rf) 
+res$mse_true_mid1fu_lm <- sapply(results, function(x) x$mse_true_mid1fu_lm) 
+res$mse_true_end1fu_rf <- sapply(results, function(x) x$mse_true_end1fu_rf) 
+res$mse_true_end1fu_lm <- sapply(results, function(x) x$mse_true_end1fu_lm) 
+res$mse_true_mid2fu_rf <- sapply(results, function(x) x$mse_true_mid2fu_rf) 
+res$mse_true_mid2fu_lm <- sapply(results, function(x) x$mse_true_mid2fu_lm) 
+res$mse_true_end2fu_rf <- sapply(results, function(x) x$mse_true_end2fu_rf) 
+res$mse_true_end2fu_lm <- sapply(results, function(x) x$mse_true_end2fu_lm)
+
+resultssafe <- results
+
+cat(paste(gsub("_rf", "", grep("_rf", names(results[[1]]), value=TRUE)), collapse = "\", \""), "\n")
+
+
+cat(paste(apply(matrix(data=1:length(results[[1]]), ncol=2, byrow=TRUE), 1, function(x) paste0("c(\"", names(results[[1]])[x[1]], "\", \"", names(results[[1]])[x[2]], "\")")), collapse=", "), "\n")
+
+
+
+rownames(res) <- NULL
+
+results <- reshape(res, varying=list(c("mse_cv_rf", "mse_cv_lm"), c("mse_TScv_1s_rf", "mse_TScv_1s_lm"), c("mse_TScv_2s_rf", "mse_TScv_2s_lm"), c("mse_TSholdout_1s_rf", "mse_TSholdout_1s_lm"), c("mse_TSholdout_2s_rf", "mse_TSholdout_2s_lm"), c("mse_true_endlast_rf", "mse_true_endlast_lm"), c("mse_true_mid1fu_rf", "mse_true_mid1fu_lm"), c("mse_true_end1fu_rf", "mse_true_end1fu_lm"), c("mse_true_mid2fu_rf", "mse_true_mid2fu_lm"), c("mse_true_end2fu_rf", "mse_true_end2fu_lm")),
+                   v.names=c("mse_cv", "mse_TScv_1s", "mse_TScv_2s", "mse_TSholdout_1s", "mse_TSholdout_2s", "mse_true_endlast", "mse_true_mid1fu", "mse_true_end1fu", "mse_true_mid2fu", "mse_true_end2fu"), 
+                   timevar="predmethod", times=c("rf", "lm"),
                    direction="long")
-results$type <- factor(results$type, levels=c("random", "grouped"))
+results$predmethod <- factor(results$predmethod, levels=c("lm", "rf"))
+
+
+
+# HIER GEHTS WEITER
+# HIER GEHTS WEITER
+# HIER GEHTS WEITER
+# HIER GEHTS WEITER
+# HIER GEHTS WEITER
+# HIER GEHTS WEITER
+
 
 library("plyr")
 
