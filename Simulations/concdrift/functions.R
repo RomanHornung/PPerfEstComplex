@@ -29,17 +29,17 @@ evaluatesetting <- function(iter) {
     x1muend <- 8; x2muend <- 4; x3muend <- -8
   }
   
-  if (xtrend == "none") {
+  if (ytrend == "none") {
     ymuend <- 0; yvarend <- 1
   }
-  if (xtrend == "weak") {
-    ymuend <- 1.5; yvarend <- 1.5
+  if (ytrend == "weak") {
+    ymuend <- 2; yvarend <- 2
   }
-  if (xtrend == "medium") {
-    ymuend <- 3; yvarend <- 3
+  if (ytrend == "medium") {
+    ymuend <- 4; yvarend <- 4
   }
-  if (xtrend == "strong") {
-    ymuend <- 6; yvarend <- 6
+  if (ytrend == "strong") {
+    ymuend <- 8; yvarend <- 8
   }
   
   # Set seed:
@@ -72,15 +72,15 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   # where we also include the midpoints in the last two seasons because we will
   # evaluate the error here as well.
   
-  seasonbreaks <- seq(0, 1, length=8)
-  seasonbreaks <- c(seasonbreaks[1:6], (seasonbreaks[6]+seasonbreaks[7])/2, 
-                    seasonbreaks[7], (seasonbreaks[7]+seasonbreaks[8])/2, 
-                    seasonbreaks[8])
+  seasonbreaks <- seq(0, 1, length=11)
+  seasonbreaks <- c(seasonbreaks[1:9], (seasonbreaks[9]+seasonbreaks[10])/2, 
+                    seasonbreaks[10], (seasonbreaks[10]+seasonbreaks[11])/2, 
+                    seasonbreaks[11])
   
   
   # Simulate the training dataset:
   
-  datatrain <- sim_dataset(seq(seasonbreaks[1], seasonbreaks[6], length=n),
+  datatrain <- sim_dataset(seq(seasonbreaks[1], seasonbreaks[9], length=n),
                            x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, 
                            ymuend=ymuend, yvarend=yvarend)
   
@@ -90,7 +90,7 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   require("mlr3verse")
   
   
-  # Us random forests and linear models as learners:
+  # Use random forests and linear models as learners:
   
   learner_temp_rf <- lrn("regr.ranger")
   learner_temp_lm <- lrn("regr.lm")
@@ -112,7 +112,7 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   
   # Regular CV:
   
-  cv <- rsmp("repeated_cv", repeats = 10, folds = 5)
+  cv <- rsmp("repeated_cv", repeats = 10, folds = 8)
   cv$instantiate(task)
   result_cv <- resample(task=task, learner=learner_temp_rf, resampling=cv)
   mse_cv_rf <- result_cv$aggregate(msr("regr.mse"))
@@ -124,9 +124,9 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   # Time series CV - predict next season:
   
   # Determine the indices of the training and test sets for the times series CV:
-  sizes <- rep(floor(n/7), 7)
-  if(n - 7*floor(n/7) > 0)
-    sizes[1:(n - 7*floor(n/7))] <- sizes[1:(n - 7*floor(n/7))] + 1
+  sizes <- rep(floor(n/8), 8)
+  if(n - 8*floor(n/8) > 0)
+    sizes[1:(n - 8*floor(n/8))] <- sizes[1:(n - 8*floor(n/8))] + 1
   train_setsTS_1s <- lapply(cumsum(sizes[-length(sizes)]), function(x) 1:x)
   train_setsTS_2s <- train_setsTS_1s[-length(train_setsTS_1s)]
   
@@ -195,7 +195,7 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   
   for(count in 1:5) {
     
-    datatest <- sim_dataset(rep(seasonbreaks[count+5], 200000),
+    datatest <- sim_dataset(rep(seasonbreaks[count+8], 200000),
                             x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
     
     test_task <- as_task_regr(datatest, target = "y")

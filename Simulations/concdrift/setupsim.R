@@ -1,4 +1,4 @@
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 
@@ -85,6 +85,8 @@ par(mfrow=c(1,1))
 
 
 
+
+
 xseq <- seq(-8, 13, length=400)
 
 par(mfrow=c(4,2))
@@ -132,6 +134,51 @@ par(mar=c(5.1, 4.1, 4.1, 2.1))
 par(mfrow=c(1,1))
 
 
+
+
+par(mfrow=c(4,2))
+par(mar=c(0, 0, 0, 0))
+n <- 8
+ymeanend <- 2
+yvarend <- 2
+ymeanseq <- seq(0, ymeanend, length=n+1)[-1]
+yvarseq <- seq(1, yvarend, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=ymeanseq[i], sd=sqrt(yvarseq[i])), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
+
+par(mfrow=c(4,2))
+par(mar=c(0, 0, 0, 0))
+n <- 8
+ymeanend <- 4
+yvarend <- 4
+ymeanseq <- seq(0, ymeanend, length=n+1)[-1]
+yvarseq <- seq(1, yvarend, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=ymeanseq[i], sd=sqrt(yvarseq[i])), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
+
+par(mfrow=c(4,2))
+par(mar=c(0, 0, 0, 0))
+n <- 8
+ymeanend <- 8
+yvarend <- 8
+ymeanseq <- seq(0, ymeanend, length=n+1)[-1]
+yvarseq <- seq(1, yvarend, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=ymeanseq[i], sd=sqrt(yvarseq[i])), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
 
 
 
