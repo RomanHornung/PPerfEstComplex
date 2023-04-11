@@ -4,7 +4,7 @@
 setwd("C:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
-nsim <- 2
+nsim <- 100
 
 
 #### regression settings
@@ -33,6 +33,9 @@ i = 1
 #### Generate Population + (large) test set
 outlist   = list()
 set.seed(1987)
+
+starti <- Sys.time()
+
 for(k in 1:nrow(experiments)){
   N             = experiments$N[k]
   n             = N/100
@@ -107,6 +110,10 @@ for(k in 1:nrow(experiments)){
 
   }
 }
+
+stopi <- Sys.time()
+
+as.numeric(difftime(stopi, starti, units = "mins"))*50
 
 results <- do.call('rbind', outlist)
 
