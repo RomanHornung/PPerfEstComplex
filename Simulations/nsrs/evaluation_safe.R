@@ -3,7 +3,7 @@ setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 # Load the results:
 
-load("./Simulations/nsrs/results/intermediate_results/results_safe.Rda")
+load("./Simulations/nsrs/results/intermediate_results/results.Rda")
 
 
 library("ggplot2")
@@ -46,9 +46,7 @@ p <- ggplot(data=ggframe, aes(y=bias, x = model, fill = type)) +
   theme_bw() + theme(axis.title.x=element_blank(), 
                      axis.title.y=element_text(size=14), 
                      axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
-                     axis.text.y = element_text(color="black", size=12), 
-                     legend.title = element_text(size=14),
-                     legend.text = element_text(size=12),
+                     axis.text.y = element_text(color="black", size=11), 
                      strip.text = element_text(size=12),
                      legend.position = c(0.75, 0.9))
 p
