@@ -1,40 +1,345 @@
-setwd("D:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 
 
 
-# xseq <- seq(-15, 10, length=400)
-# 
-# 
-# 
-# plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
-# lines(xseq, dnorm(xseq, mean=5, sd=1), col=2)
-# lines(xseq, dnorm(xseq, mean=-3, sd=1), col=3)
-# 
-# 
-# 
-# plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
-# lines(xseq, dnorm(xseq, mean=2.5, sd=1), col=2)
-# lines(xseq, dnorm(xseq, mean=-1.5, sd=1), col=3)
-# 
-# 
-# 
-# 
-# 
-# plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l")
-# lines(xseq, dnorm(xseq, mean=4, sd=1), col=2)
-# lines(xseq, dnorm(xseq, mean=-2, sd=1), col=3)
+
+
+
+
+
+xseq <- seq(-10.5, 10.5, length=400)
+
+
+
+seasons <- 1:10
+strengths <- c("weak", "medium-strong", "strong")
+variables <- c("baseline", "x1", "x2", "x3")
+
+ggdata <- expand.grid(x=xseq, variable=variables, season=seasons, strength=strengths, stringsAsFactors = FALSE)
+ggdata <- ggdata[,ncol(ggdata):1]
+
+
+
+getcoef <- function(t, startval, stopval) {
+  
+  tstart <- 0
+  tend <- 1
+  
+  b1 <- (stopval - startval)/(tend - tstart)
+  b0 <- startval - b1*tstart
+  
+  return(b0 + b1*t)
+  
+}
+
+
+
+
+
+
+scengrid <- expand.grid(variable=variables[-1], season=seasons, strength=strengths, stringsAsFactors = FALSE)
+scengrid <- scengrid[,ncol(scengrid):1]
+
+scengrid$xmu <- NA
+
+ts <- seq(0.05,0.95, length=10)
+
+for(i in 1:nrow(scengrid)) {
+  if (scengrid$strength[i]=="weak" & scengrid$variable[i]=="x1") {
+    scengrid$xmu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = 2)
+  }
+  if (scengrid$strength[i]=="weak" & scengrid$variable[i]=="x2") {
+    scengrid$xmu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = 1)
+  }
+  if (scengrid$strength[i]=="weak" & scengrid$variable[i]=="x3") {
+    scengrid$xmu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = -2)
+  }
+  if (scengrid$strength[i]=="medium-strong" & scengrid$variable[i]=="x1") {
+    scengrid$xmu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = 4)
+  }
+  if (scengrid$strength[i]=="medium-strong" & scengrid$variable[i]=="x2") {
+    scengrid$xmu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = 2)
+  }
+  if (scengrid$strength[i]=="medium-strong" & scengrid$variable[i]=="x3") {
+    scengrid$xmu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = -4)
+  }
+  if (scengrid$strength[i]=="strong" & scengrid$variable[i]=="x1") {
+    scengrid$xmu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = 8)
+  }
+  if (scengrid$strength[i]=="strong" & scengrid$variable[i]=="x2") {
+    scengrid$xmu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = 4)
+  }
+  if (scengrid$strength[i]=="strong" & scengrid$variable[i]=="x3") {
+    scengrid$xmu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = -8)
+  }
+}
+
+
+
+
+ggdata$y <- NA
+
+for(i in seq(along=strengths)) {
+  for(j in seq(along=seasons)) {
+    for(k in seq(along=variables)) {
+      
+      indtemp <- which(ggdata$strength==strengths[i] & ggdata$season==seasons[j] & ggdata$variable==variables[k])
+      
+      if (variables[k]=="baseline")
+        ggdata$y[indtemp] <- dnorm(xseq, mean=0, sd=1)
+      else
+        ggdata$y[indtemp] <- dnorm(xseq, mean=scengrid$xmu[scengrid$strength==strengths[i] & scengrid$season==seasons[j] & scengrid$variable==variables[k]], sd=1)
+      
+    }
+  }
+}
+
+
+
+ggdata$season <- factor(paste0("season ", ggdata$season), levels=paste0("season ", 1:10))
+
+
+
+library("ggplot2")
+
+
+library("scales")
+default_colors <- hue_pal()(3)
+default_colors
+
+# Custom colors for the 4 factors
+custom_colors <- c("baseline" = "darkgrey", "x1" = "#F8766D", "x2" = "#00BA38", "x3" = "#619CFF")
+
+# Custom line types for the 4 factors
+custom_linetypes <- c("baseline" = "dashed", "x1" = "solid", "x2" = "solid", "x3" = "solid")
+
+
+
+p1 <- ggplot(data = ggdata[ggdata$strength == "weak",], aes(x = x, y = y, color = variable, linetype = variable)) +
+  geom_line() +
+  facet_wrap(~season, ncol = 1) +
+  ggtitle("weak") +
+  theme_bw() +
+  theme(plot.title=element_text(size=16), axis.title = element_blank(), axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank(), strip.text.x=element_text(size=15), legend.position = "none") +
+  scale_color_manual(values = custom_colors) +
+  scale_linetype_manual(values = custom_linetypes)
+p1
+
+p2 <- ggplot(data = ggdata[ggdata$strength == "medium-strong",], aes(x = x, y = y, color = variable, linetype = variable)) +
+  geom_line() +
+  facet_wrap(~season, ncol = 1) +
+  ggtitle("medium-strong") +
+  theme_bw() +
+  theme(plot.title=element_text(size=16), axis.title = element_blank(), axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank(), strip.text.x=element_text(size=15), legend.position = "none") +
+  scale_color_manual(values = custom_colors) +
+  scale_linetype_manual(values = custom_linetypes)
+p2
+
+p3 <- ggplot(data = ggdata[ggdata$strength == "strong",], aes(x = x, y = y, color = variable, linetype = variable)) +
+  geom_line() +
+  facet_wrap(~season, ncol = 1) +
+  ggtitle("strong") +
+  theme_bw() +
+  theme(plot.title=element_text(size=16), axis.title = element_blank(), axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank(), strip.text.x=element_text(size=15), legend.position = "none") +
+  scale_color_manual(values = custom_colors) +
+  scale_linetype_manual(values = custom_linetypes)
+p3
+
+library("ggpubr")
+p <- ggarrange(p1, p2, p3, ncol = 3, nrow = 1)#, widths=c(0.7, 0.7, 1))
+p
+
+ggsave("./Simulations/concdrift/results/figures/featuredrift.pdf", plot=p, width=12, height=16)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+xseq <- seq(-4, 16, length=400)
+
+
+
+seasons <- 1:10
+strengths <- c("weak", "medium-strong", "strong")
+variables <- c("baseline", "y")
+
+ggdata <- expand.grid(x=xseq, variable=variables, season=seasons, strength=strengths, stringsAsFactors = FALSE)
+ggdata <- ggdata[,ncol(ggdata):1]
+
+
+
+getcoef <- function(t, startval, stopval) {
+  
+  tstart <- 0
+  tend <- 1
+  
+  b1 <- (stopval - startval)/(tend - tstart)
+  b0 <- startval - b1*tstart
+  
+  return(b0 + b1*t)
+  
+}
+
+
+
+
+
+
+scengrid <- expand.grid(variable=variables[-1], season=seasons, strength=strengths, stringsAsFactors = FALSE)
+scengrid <- scengrid[,ncol(scengrid):1]
+
+scengrid$xmu <- NA
+scengrid$xsd <- NA
+
+ts <- seq(0.05,0.95, length=10)
+
+for(i in 1:nrow(scengrid)) {
+  if (scengrid$strength[i]=="weak") {
+    scengrid$ymu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = 2)
+    scengrid$ysd[i] <- sqrt(getcoef(ts[scengrid$season[i]], startval=0, stopval = 2))
+  }
+  if (scengrid$strength[i]=="medium-strong") {
+    scengrid$ymu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = 4)
+    scengrid$ysd[i] <- sqrt(getcoef(ts[scengrid$season[i]], startval=0, stopval = 4))
+  }
+  if (scengrid$strength[i]=="strong") {
+    scengrid$ymu[i] <- getcoef(ts[scengrid$season[i]], startval=0, stopval = 8)
+    scengrid$ysd[i] <- sqrt(getcoef(ts[scengrid$season[i]], startval=0, stopval = 8))
+  }
+}
+
+
+
+
+ggdata$y <- NA
+
+for(i in seq(along=strengths)) {
+  for(j in seq(along=seasons)) {
+    for(k in seq(along=variables)) {
+      
+      indtemp <- which(ggdata$strength==strengths[i] & ggdata$season==seasons[j] & ggdata$variable==variables[k])
+      
+      if (variables[k]=="baseline")
+        ggdata$y[indtemp] <- dnorm(xseq, mean=0, sd=1)
+      else
+        ggdata$y[indtemp] <- dnorm(xseq, mean=scengrid$ymu[scengrid$strength==strengths[i] & scengrid$season==seasons[j] & scengrid$variable==variables[k]], 
+                                   sd=scengrid$ysd[scengrid$strength==strengths[i] & scengrid$season==seasons[j] & scengrid$variable==variables[k]])
+      
+    }
+  }
+}
+
+
+
+ggdata$season <- factor(paste0("season ", ggdata$season), levels=paste0("season ", 1:10))
+
+
+
+
+
+library("ggplot2")
+
+# Custom colors for the 4 factors
+custom_colors <- c("baseline" = "darkgrey", "y" = "black")
+
+# Custom line types for the 4 factors
+custom_linetypes <- c("baseline" = "dashed", "y" = "solid")
+
+
+
+p1 <- ggplot(data = ggdata[ggdata$strength == "weak",], aes(x = x, y = y, color = variable, linetype = variable)) +
+  geom_line() +
+  facet_wrap(~season, ncol = 1, scales="free_y") +
+  ggtitle("weak") +
+  theme_bw() +
+  theme(plot.title=element_text(size=16), axis.title = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), 
+        strip.text.x=element_text(size=15), legend.position = "none") +
+  scale_color_manual(values = custom_colors) +
+  scale_linetype_manual(values = custom_linetypes)
+p1
+
+p2 <- ggplot(data = ggdata[ggdata$strength == "medium-strong",], aes(x = x, y = y, color = variable, linetype = variable)) +
+  geom_line() +
+  facet_wrap(~season, ncol = 1, scales="free_y") +
+  ggtitle("medium-strong") +
+  theme_bw() +
+  theme(plot.title=element_text(size=16), axis.title = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), 
+        strip.text.x=element_text(size=15), legend.position = "none") +
+  scale_color_manual(values = custom_colors) +
+  scale_linetype_manual(values = custom_linetypes)
+p2
+
+p3 <- ggplot(data = ggdata[ggdata$strength == "strong",], aes(x = x, y = y, color = variable, linetype = variable)) +
+  geom_line() +
+  facet_wrap(~season, ncol = 1, scales="free_y") +
+  ggtitle("strong") +
+  theme_bw() +
+  theme(plot.title=element_text(size=16), axis.title = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), 
+        strip.text.x=element_text(size=15), legend.position = "none") +
+  scale_color_manual(values = custom_colors) +
+  scale_linetype_manual(values = custom_linetypes)
+p3
+
+library("ggpubr")
+p <- ggarrange(p1, p2, p3, ncol = 3, nrow = 1)#, widths=c(0.7, 0.7, 1))
+p
+
+ggsave("./Simulations/concdrift/results/figures/labeldrift.pdf", plot=p, width=12, height=16)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 xseq <- seq(-8, 13, length=400)
 
-par(mfrow=c(4,2))
+par(mfrow=c(4,3))
 par(mar=c(0, 0, 0, 0))
-n <- 8
+n <- 10
 x1end <- 2
-x2end <- -1
+x2end <- -2
 x1seq <- seq(0, x1end, length=n+1)[-1]
 x2seq <- seq(0, x2end, length=n+1)[-1]
 for(i in seq(along=x1seq)) {
@@ -44,6 +349,46 @@ for(i in seq(along=x1seq)) {
 }
 par(mar=c(5.1, 4.1, 4.1, 2.1))
 par(mfrow=c(1,1))
+
+
+
+
+xseq <- seq(-8, 13, length=400)
+
+par(mfrow=c(4,3))
+par(mar=c(0, 0, 0, 0))
+n <- 10
+x1end <- 4
+x2end <- -4
+x1seq <- seq(0, x1end, length=n+1)[-1]
+x2seq <- seq(0, x2end, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=x1seq[i], sd=1), col=2)
+  lines(xseq, dnorm(xseq, mean=x2seq[i], sd=1), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
+
+
+xseq <- seq(-8, 13, length=400)
+
+par(mfrow=c(4,3))
+par(mar=c(0, 0, 0, 0))
+n <- 10
+x1end <- 8
+x2end <- -8
+x1seq <- seq(0, x1end, length=n+1)[-1]
+x2seq <- seq(0, x2end, length=n+1)[-1]
+for(i in seq(along=x1seq)) {
+  plot(xseq, dnorm(xseq, mean=0, sd=1), ty="l", xlab="", ylab="")
+  lines(xseq, dnorm(xseq, mean=x1seq[i], sd=1), col=2)
+  lines(xseq, dnorm(xseq, mean=x2seq[i], sd=1), col=3)
+}
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+par(mfrow=c(1,1))
+
 
 
 
