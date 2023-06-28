@@ -1,5 +1,4 @@
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
-
+setwd("C:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 # Load and pre-process the results:
 ###################################
@@ -89,6 +88,37 @@ resultsum <- ddply(results, .variables=c("fixed", "N", "n_i", "var_intercept", "
 
 
 head(resultsum)
+
+
+
+
+
+res <- results[results$var_intercept==1 & results$var_slope==1 & results$var_eps==0.25,]
+
+res$N_n_i <- paste0("N = ", res$N, ", n_m = ", res$n_i)
+res$N_n_i <- factor(res$N_n_i, levels=c("N = 10, n_m = 5", "N = 10, n_m = 25", "N = 50, n_m = 5", "N = 50, n_m = 25"))
+
+res$predmethod <- factor(res$predmethod, levels = rev(levels(res$predmethod)))
+
+levels(res$predmethod) <- c("'linear models'", "'random forests'")
+levels(res$fixed) <- c("'without cluster-constant feature values'", "paste(x[1], ' values constant within clusters')",
+                       "paste(x[2], ' values constant within clusters')")
+
+p <- ggplot(data=res, aes(x=N_n_i, y=CV_err, fill=type)) + theme_bw() +
+  geom_boxplot() + 
+  facet_wrap(~ predmethod + fixed, labeller = label_parsed, ncol = 3, scales="free_y") +
+  ylab("Cross-validated MSE") +
+  theme(axis.title.x=element_blank(), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
+        strip.text.x = element_text(size = 11),
+        legend.position = "none")
+p
+
+ggsave("./Simulations/ClustData/Results/figures/clustersim.pdf", width=10, height=7)
+
+
+
+
 
 
 # res <- resultsum[resultsum$fixed!="none",]
