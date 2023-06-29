@@ -255,6 +255,54 @@ ggsave("./Simulations/concdrift/results/figures/mse_n1000_lm.pdf", width=11, hei
 
 
 
+
+
+
+
+names(resultstemplong)
+
+
+table(resultstemplong$xtrend)
+table(resultstemplong$ytrend)
+
+c("no covariate shift", "strong covariate shift")
+c("no label shift", "strong label shift")
+
+
+
+res <- resultstemplong[resultstemplong$n=="n = 500" & resultstemplong$xtrend %in% c("no covariate shift", "strong covariate shift") &
+                         resultstemplong$ytrend %in% c("no label shift", "strong label shift"),]
+
+newlabels <- levels(res$type)
+newlabels[newlabels == "E1fus_version2"] <- "E1fus"
+
+# colors to use:
+scales::hue_pal()(3)[1:2]
+
+library("ggplot2")
+p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
+  geom_boxplot() + facet_wrap(~ predmethod + xtrend + ytrend, ncol = 4, scales="free_y") +
+  theme(axis.title.x=element_blank(), 
+        axis.title.y=element_text(size=14), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
+        axis.text.y = element_text(color="black", size=11), 
+        strip.text = element_text(size=12),
+        legend.position = "none") + ylab("Estimated and true MSE values") +
+  scale_fill_manual(values = c(rep("#F8766D", 3), rep("#00BA38", 3), rep("#F8766D", 2), rep("#00BA38", 3))) +
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+p
+
+ggsave("./Simulations/concdrift/results/figures/covdriftsim.pdf", width=13.5, height=7)
+
+
+
+
+
+
+
+
+
+
 res <- resultstemplong[resultstemplong$predmethod=="rf" & resultstemplong$xtrend=="no covariate shift",]
 
 newlabels <- levels(res$type)
