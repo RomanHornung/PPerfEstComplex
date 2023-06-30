@@ -1,4 +1,4 @@
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("C:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 # Load and pre-process the results:
@@ -259,15 +259,6 @@ ggsave("./Simulations/concdrift/results/figures/mse_n1000_lm.pdf", width=11, hei
 
 
 
-names(resultstemplong)
-
-
-table(resultstemplong$xtrend)
-table(resultstemplong$ytrend)
-
-c("no covariate shift", "strong covariate shift")
-c("no label shift", "strong label shift")
-
 
 
 res <- resultstemplong[resultstemplong$n=="n = 500" & resultstemplong$xtrend %in% c("no covariate shift", "strong covariate shift") &
@@ -278,6 +269,8 @@ newlabels[newlabels == "E1fus_version2"] <- "E1fus"
 
 # colors to use:
 scales::hue_pal()(3)[1:2]
+
+levels(res$predmethod) <- c("linear models", "random forests")
 
 library("ggplot2")
 p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
@@ -292,11 +285,26 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
 p
 
-ggsave("./Simulations/concdrift/results/figures/covdriftsim.pdf", width=13.5, height=7)
+ggsave("./Simulations/concdrift/results/figures/concdriftsim.pdf", width=13.5, height=7)
 
 
 
 
+res$predmethod <- factor(res$predmethod, levels = rev(levels(res$predmethod)))
+
+levels(res$predmethod) <- c("'linear models'", "'random forests'")
+levels(res$fixed) <- c("'without cluster-constant feature values'", "paste(x[1], ' values constant within clusters')",
+                       "paste(x[2], ' values constant within clusters')")
+
+p <- ggplot(data=res, aes(x=N_n_i, y=CV_err, fill=type)) + theme_bw() +
+  geom_boxplot() + 
+  facet_wrap(~ predmethod + fixed, labeller = label_parsed, ncol = 3, scales="free_y") +
+  ylab("Cross-validated MSE") +
+  theme(axis.title.x=element_blank(), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
+        strip.text.x = element_text(size = 11),
+        legend.position = "none")
+p
 
 
 
@@ -589,11 +597,11 @@ ranger(dependent.variable.name = "y", data=datatrain_Nocovshift, num.trees=1000)
 
 # Fragen: Warum ist die Varianz der y-Werte bei covdrift geringer, wenn es einen labelshift gibt?
 # Und warum ist dann nicht so, wenn es keinen labelshift gibt? Da ist die Varianz der y-Werte bei
-# covdrift größer.
+# covdrift gr??er.
 
-# --> Einzige Erklärung: es muss mit varrienden Intercept zu tun haben bei labelshift.
+# --> Einzige Erkl?rung: es muss mit varrienden Intercept zu tun haben bei labelshift.
 
-# Warum führt dieser Intercept dazu, dass bei covdrift die Varianz geringer wird.
+# Warum f?hrt dieser Intercept dazu, dass bei covdrift die Varianz geringer wird.
 
 
 
@@ -642,8 +650,8 @@ plot(sapply(seq(seasonbreaks[1], seasonbreaks[9], length=n), function(t) getcoef
 cor(sapply(seq(seasonbreaks[1], seasonbreaks[9], length=n), function(t) getcoef(t, startval=0, stopval=ymuend)), datatrain_Nocovshift$X1*2 + datatrain_Nocovshift$X2*(-1) + 
       datatrain_Nocovshift$X3*2)
 
-# --> Erklaerung: Bei covshift sind der intercept und der rest vom linearen Prädiktor negativ assoziert, was
-# dazu führt, dass die Summe der beiden geringer wird (Var(X+Y)=Var(X)+Var(Y)+2*Cov(X,Y)).
+# --> Erklaerung: Bei covshift sind der intercept und der rest vom linearen Pr?diktor negativ assoziert, was
+# dazu f?hrt, dass die Summe der beiden geringer wird (Var(X+Y)=Var(X)+Var(Y)+2*Cov(X,Y)).
 
 
 plot(sapply(seq(seasonbreaks[1], seasonbreaks[9], length=n), function(t) getcoef(t, startval=0, stopval=ymuend)))
@@ -654,9 +662,9 @@ plot(datatrain_Nocovshift$X1*2 + datatrain_Nocovshift$X2*(-1) +
 
 
 
-# Finale Erklaerung, warum für Szenarien mit Label shift die Varianz von y geringer ist, wenn es covariate shift
+# Finale Erklaerung, warum f?r Szenarien mit Label shift die Varianz von y geringer ist, wenn es covariate shift
 # gibt wie wenn es keinen covariate shift gibt:
-# Für Szenarien mit Labelshift ist der Intercept (linear) ansteigend. Und die Summe x_1*beta_1 + x_2*beta_2 + x_3*beta_3
+# F?r Szenarien mit Labelshift ist der Intercept (linear) ansteigend. Und die Summe x_1*beta_1 + x_2*beta_2 + x_3*beta_3
 # hat bei covariate shift einen leicht abfallenen Trend, da sich der positive und negative Trend von x_1*beta_1 und
 # x_3*beta_3 jeweils canceln und da x_2*beta_2 einen leicht abfallenden Trend hat. Aus der Kombination dass 
 # der Intercept ansteigend ist und x_1*beta_1 + x_2*beta_2 + x_3*beta_3 abfallend, ergibt sich dass die Summe
@@ -664,13 +672,13 @@ plot(datatrain_Nocovshift$X1*2 + datatrain_Nocovshift$X2*(-1) +
 # Covariate shift gibt, weil in letzterem Fall x_1*beta_1 + x_2*beta_2 + x_3*beta_3 keinen abfallenden Trend
 # hat.
 
-# Und daraus, dass für Szenarien mit Label shift die Varianz von y geringer ist, wenn es covariate shift
-# gibt wie wenn es keinen covariate shift gibt ergibt sich, dass für erstere Szenarien auch der MSE geringer
+# Und daraus, dass f?r Szenarien mit Label shift die Varianz von y geringer ist, wenn es covariate shift
+# gibt wie wenn es keinen covariate shift gibt ergibt sich, dass f?r erstere Szenarien auch der MSE geringer
 # ist, weil der MSE bei geringerer Varianz i.d.R. geringer wird.
 
 # Wenn es keinen Label shift gibt ist die Varianz von  beta_0(t) + x_1*beta_1 + x_2*beta_2 + x_3*beta_3
-# bei covariate shift größer, was erklärt, warum hier der MSE (wie man eigentlich erwarten würde) bei
-# covariate shift auch größer ist.
+# bei covariate shift gr??er, was erkl?rt, warum hier der MSE (wie man eigentlich erwarten w?rde) bei
+# covariate shift auch gr??er ist.
 
 
 

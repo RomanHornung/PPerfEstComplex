@@ -1,4 +1,4 @@
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+setwd("C:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 # Load and pre-process the results:
@@ -146,6 +146,30 @@ p <- ggplot(data=resultstemp, aes(x=n, y=value, fill=type)) + theme_bw() +
   facet_wrap(~measure, scales="free_y") + ylab("Difference between estimated and true evaluation metric values divided by true values") +
   theme(axis.title = element_text(color="black"))
 p
+
+
+
+resultstemp <- results[results$type %in% c("CV_percdiff", "stratCV_percdiff"),]
+resultstemp$type <-factor(resultstemp$type, levels=c("CV_percdiff", "stratCV_percdiff"))
+
+if(all(levels(resultstemp$measure) == c("acc", "hierpr_micro", "hierpr_macro", "hierre_micro", "hierre_macro", "hierf_micro", "hierf_macro", "spath", "hloss" )))
+  levels(resultstemp$measure) <- c("'accuracy'", "'micro-averaged hierarchical precision'", "'macro-averaged hierarchical precision'", 
+                                   "'micro-averaged hierarchical recall'", "'macro-averaged hierarchical recall'", 
+                                   "paste('micro-averaged hierarchical ', F[1], ' score')", "paste('macro-averaged hierarchical ', F[1], ' score')", 
+                                   "'weighted shortest path loss measure'", "'H-loss'" )
+
+library("ggplot2")
+p <- ggplot(data=resultstemp, aes(x=n, y=value, fill=type)) + theme_bw() +
+  geom_boxplot() + geom_hline(yintercept=0, linetype="dashed", color="blue") + 
+  facet_wrap(~measure, labeller = label_parsed, scales="free_y") + ylab("Difference between estimated and true evaluation metric values divided by true values") +
+  xlab(expression(paste("n"[train]))) +
+  theme(axis.title = element_text(color="black", size=12), 
+        strip.text.x = element_text(size=11),
+        legend.position = "none")
+p
+
+ggsave("./Simulations/HierPr/Results/figures/hierprsim.pdf", width=10, height=8)
+
 
 
 

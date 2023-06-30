@@ -1,7 +1,7 @@
 setwd("C:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
-pointsize <- 0.75
+pointsize <- 0.7
 titlesize <- 18
 
 
@@ -65,7 +65,7 @@ p1 <- ggplot() +
         axis.title=element_blank(),
         plot.title = element_text(size = titlesize)) +
   coord_sf() + 
-  ggtitle("Single split into training and test data\n")
+  ggtitle("\nSingle split into training and test data")
 
 p1
 
@@ -133,7 +133,7 @@ p2 <- ggplot() +
         axis.title=element_blank(),
         plot.title = element_text(size = titlesize)) +
   coord_sf() +
-  ggtitle("Rectangular tiles\n")
+  ggtitle("\nRectangular tiles")
 
 p2
 
@@ -312,7 +312,7 @@ p6 <- ggplot() +
         axis.ticks=element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         axis.title=element_blank(),
         plot.title = element_text(size = titlesize)) +
-  coord_sf() + ggtitle("Partitioning based on geographical units\n")
+  coord_sf() + ggtitle("\nPartitioning based on geographical units")
 
 p6
 
@@ -322,4 +322,4 @@ library("gridExtra")
 p <- grid.arrange(p1, p2, p3, p4, p5, p6, ncol=3)
 p
 
-ggsave("./simulations/spatial/results/figures/SpatialVis.pdf", plot=p, width=10*1.5, height=7*1.5)
+ggsave("./simulations/spatial/results/figures/spatialvis.pdf", plot=p, width=10*1.5, height=7*1.5)
