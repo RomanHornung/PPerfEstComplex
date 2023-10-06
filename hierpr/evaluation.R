@@ -137,7 +137,7 @@ p <- ggplot(data=resultstemp, aes(x=n, y=value, fill=type)) + theme_bw() +
         legend.position = "none")
 p
 
-ggsave("./hierpr/Results/figures/Figure8.pdf", width=10, height=8)
+ggsave("./hierpr/Results/figures/Figure9.pdf", width=10, height=8)
 
 
 

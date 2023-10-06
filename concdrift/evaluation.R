@@ -157,7 +157,7 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
 p
 
-ggsave("./concdrift/results/figures/Figure6.pdf", width=13.5, height=7)
+ggsave("./concdrift/results/figures/Figure7.pdf", width=13.5, height=7)
 
 
 
