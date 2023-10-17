@@ -27,7 +27,8 @@ evaluatesetting <- function(iter) {
   datatest <- sim_data(n=200000, coeflist=coeflist)
   
   
-  
+  datatest <- datatest[as.character(datatest$y) %in% unique(as.character(datatrain$y)),]
+  ntest <- nrow(datatest)
   
   # Load the required packages:
   library("mlr3")
@@ -115,9 +116,9 @@ evaluatesetting <- function(iter) {
   res <- data.frame(measure=c("hierf_micro", "hierf_macro", "hierpr_micro", 
                               "hierpr_macro", "hierre_micro", "hierre_macro",
                               "hloss", "spath", "acc"), CV_vals=CV_vals, 
-                    stratCV_vals=stratCV_vals, truth_vals=truth_vals)
+                    stratCV_vals=stratCV_vals, truth_vals=truth_vals, ntest=ntest)
   
-  
+
   save(res, file=paste0("./hierpr/results/intermediate_results/res_", iter, ".Rda"))
   
   # Return the results:
@@ -307,6 +308,7 @@ plot_structure <- function(x) {
   p
   
 }
+
 
 
 
