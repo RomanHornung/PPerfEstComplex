@@ -1,26 +1,33 @@
+# DONE:
 
+# This function performs one repetition of the simulation.
+#
+# It takes the whole number 'iter', which corresponds to the iter-th line 
+# of 'scenariogrid', which contains the necessary information
+# on the iter-th setting.
 
 evaluatesetting <- function(iter) {
   
   setwd(wd)
-  
+    
   # Obtain information for the iter-th setting:
   
   n <- scenariogrid$n[iter]
   seed_start <- scenariogrid$seed_start[iter]
   seed_res <- scenariogrid$seed_res[iter]
 
+
   # Set seed:
 
   set.seed(seed_start)
   
+
+# Simulate the training data set and the huge test data set:
   
   load("./hierpr/results/intermediate_results/treestruc.Rda")
 
-
   coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
                              sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
-  
   
   datatrain <- sim_data(n=n, coeflist=coeflist)
   
@@ -30,6 +37,7 @@ evaluatesetting <- function(iter) {
   
   
   # Load the required packages:
+  
   library("mlr3")
   library("hierclass")
   
@@ -37,13 +45,18 @@ evaluatesetting <- function(iter) {
 
 
   # Define the task for the top-down classification rule:
+  
   task = as_task_classif(y ~ ., data = datatrain)
   
   
   # Initialize the learner for the top-down classification rule:
+  
   learner = lrn("classif.topdown")
   
   
+  
+  
+  # Perform standard CV:
   
   set.seed(seed_res)
   
@@ -65,6 +78,8 @@ evaluatesetting <- function(iter) {
   
   
   
+  # Perform stratified CV:
+  
   set.seed(seed_res)
   
   task$col_roles$stratum = task$target_names
@@ -85,6 +100,7 @@ evaluatesetting <- function(iter) {
   
   
   
+  # Approximate the true performance metrics values using the huge test data set:
   
   datacompl <- rbind(datatrain, datatest)
   ntrain <- nrow(datatrain); nall <- nrow(datacompl)
@@ -112,47 +128,229 @@ evaluatesetting <- function(iter) {
   
   
   
+  # Combine the results:
+  
   res <- data.frame(measure=c("hierf_micro", "hierf_macro", "hierpr_micro", 
                               "hierpr_macro", "hierre_micro", "hierre_macro",
                               "hloss", "spath", "acc"), CV_vals=CV_vals, 
                     stratCV_vals=stratCV_vals, truth_vals=truth_vals)
   
   
-  save(res, file=paste0("./hierpr/results/intermediate_results/res_", iter, ".Rda"))
-  
   # Return the results:
   
   return(res)
+  
 }
 
 
 
 
-# Function for simulating the datasets.
+
+
+
+
+
+
+# Function to simulate a dataset.
 
 # Function input:
 
-# 
+# n: number of observations to simulate
+# coeflist: result of simulate_coefs. A list of the coefs to be used in the
+# simulation as well as other information about the tree structure.
 
 # Function output:
 
-# A data.frame containing the simulated data.
+# A list containing the following:
+# data: The simulated data.frame.
+# coeflist: The input list 'coeflist' to which the simulated data associated
+# with each node was added during the execution of sim_data()
 
-simuldata <- function(n=500)
-{
- 
+sim_data <- function(n, coeflist) {
+
+  # Simulate the covariate matrix:
   
+  X <- matrix(nrow=n, ncol=5, rnorm(n*5))
+
+
+  # Simulate the outcome:
   
+  maxlayer <- max(sapply(coeflist, function(x) x$layer))
+
+  # Outcome matrix with 5 columns, where the j-th column
+  # will contain the classes of the observations in the
+  # j-th layer:
+  outcomemat <- matrix(nrow=nrow(X), ncol=maxlayer)
+
   
-  # simdata <- 
-  return(simdata)
+  # Assign the child node classes of the observations in the root node:
+
+  # Determine the child nodes of the root node:
+  tempclass <- coeflist[[1]]$childnodes[get_child_nodes(X, coeflist[[1]]$coefs, 1)]
+
+  # Assign these child node classes:
+  outcomemat[,1] <- tempclass
+
+
+  # Assign the child node classes of the observations in all other subsequent nodes:
+
+  for(i in 2:length(coeflist)) {
+
+    # Determine the subset of observations that are in the i-th node:
+    subs <- which(outcomemat[,coeflist[[i]]$layer-1]==i)
+    
+    if (length(subs) > 0) {
+    
+    # Determine the child nodes for this subset of observations:
+    tempclass <- coeflist[[i]]$childnodes[get_child_nodes(X[subs, , drop=FALSE], coeflist[[i]]$coefs, i)]
+
+    # Assign these child nodes to the corresponding rows in 'outcomemat':
+    outcomemat[subs,coeflist[[i]]$layer] <- tempclass
+    
+    }
+
+  }
+
+  # Bring the outcome into the format needed by 'hierclass':
+  ystring <- apply(outcomemat, 1, function(x) paste(x, collapse="."))
+
+  allclasses <- sort(unique(unlist(lapply(lapply(unique(ystring), function(x) strsplit(x, split="\\.")[[1]]), function(x) lapply(1:length(x), function(y) paste(x[1:y], collapse="."))))))
+
+  # Make the data.frame:
+  data <- data.frame(X)
+  data$y <- factor(ystring, levels=allclasses)
+
+  return(data)
+
 }
 
 
 
 
 
-# Function for randomly generating the tree structure:
+
+# Function to simulate the coefficients.
+
+# Function input:
+
+# treestruc: A list. The tree structure.
+# sdbeta0: The standard deviation of the normal distribution from which
+# the intercepts are drawn.
+# sdbeta: The standard deviation of the normal distribution from which
+# the coefficients are drawn. These depend on the layer of the tree because
+# lower tree layers should feature less predictive signal.
+
+# Function output:
+
+# A list containing, for each internal node the coefs to be used in the
+# simulation, the child nodes, the parent nodes, and the layer of each node.
+
+simulate_coefs <- function(treestruc, sdbeta0=sqrt(1),
+                           sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5))) {
+
+  # Make a list that will contain the simulated coefficients as well as
+  # information on the tree structure (specifying the position of the
+  # node in the trees):
+  
+  coeflist <- vector(mode = "list", length = length(treestruc$nodelist))
+  
+  
+  # Add the information on the tree structure:
+  
+  for(i in seq(along=coeflist)) {
+    
+    coeflist[[i]] <- list()
+
+    # Add the information on the child nodes for each node:
+    coeflist[[i]]$childnodes <- treestruc$nodelist[[i]]
+
+    # Add the information on the parent nodes for each node:
+    coeflist[[i]]$parentnodes <- which(sapply(1:length(coeflist), function(x) i %in% coeflist[[x]]$childnodes))
+
+    # Add the layer of each node:
+    coeflist[[i]]$layer <- which(sapply(1:length(treestruc$leftnodes), function(x) (i >= treestruc$leftnodes[x]) & (i <= treestruc$rightnodes[x])))
+
+  }
+
+  # Simulate the coefficients:
+
+  for(i in seq(along=coeflist)) {
+
+    # If the node has only two child nodes, we need only one set of coefficients:
+    if(length(coeflist[[i]]$childnodes)==2) {
+      coefs <- matrix(nrow=1, ncol=6, data=c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
+    }
+    # If the node has three child nodes, we need two sets of coefficients:
+    if(length(coeflist[[i]]$childnodes)==3) {
+      coefs <- rbind(c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])),
+                     c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
+    }
+
+    coeflist[[i]]$coefs <- coefs
+
+  }
+
+  return(coeflist)
+
+}
+
+
+
+
+# Function that takes the covariate matrix of the subset of observations
+# contained in a node and the coefficients associated with that node
+# to output the indices of the child nodes to which the observations
+# get assigned to.
+# Note that the assignments are performed according to a multinomial
+# regression model.
+
+# Function input:
+
+# Xsub: The matrix of observations in the current node. Observations in
+# rows and variables in columns.
+# coefs: The matrix of coefficients associated with the current node.
+
+# Function output:
+
+# A vector that gives the index of the child node for each observation.
+
+get_child_nodes <- function(Xsub, coefs, i) {
+
+  # Determine the (unstandardized) probabilities for each child node:
+  
+  desmat <- cbind(1, Xsub)
+
+  if (nrow(coefs)==2)
+    vProb <- cbind(1, exp(desmat%*%coefs[1,]), exp(desmat%*%coefs[2,]))
+  else
+    vProb <- cbind(1, exp(desmat%*%coefs[1,]))
+
+  # Draw the child nodes based on the probabilities obtained in the
+  # first step:
+  
+  mChoices <- t(apply(vProb, 1, rmultinom, n = 1, size = 1))
+  
+  
+  # Make a vector of the child node indices:
+  
+  ys <- apply(mChoices, 1, function(x) which(x==1))
+
+  return(ys)
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+# Function to randomly generate a tree structure.
 
 # Function input:
 
@@ -176,9 +374,6 @@ gen_tree_structure <- function(maxnleaf=20) {
   count <- count+1
   
   numnodes <- sample(2:3, size=1, prob=c(2,1))
-  numnodes
-  if(numnodes > maxnleaf)
-    stop("bla bla bla.")
   
   nodelist[[1]] <- 1 + (1:numnodes)
   
@@ -226,7 +421,7 @@ gen_tree_structure <- function(maxnleaf=20) {
 
 
 
-# Function for plotting the tree structure:
+# Function to plot a tree structure.
 
 # Function input:
 
@@ -306,227 +501,4 @@ plot_structure <- function(x) {
           plot.background=element_blank())
   p
   
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Function to simulate the coefficients:
-
-
-# Function input:
-
-# treestruc: A list. The tree structure.
-# sdbeta0: The standard deviation of the normal distribution from which
-# the intercepts are drawn.
-# sdbeta: The standard deviation of the normal distribution from which
-# the coefficients are drawn. These depend on the layer of the tree because
-# lower tree layers should feature less predictive signal.
-
-# Function output:
-
-# A list containing, for each internal node the coefs to be used in the
-# simulation, the child nodes, the parent nodes, and the layer of each node.
-
-simulate_coefs <- function(treestruc, sdbeta0=sqrt(1),
-                           sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5))) {
-
-  # Make a list that will contain the simulated coefficients as well as
-  # information on the tree structure (specifying the position of the
-  # node in the trees):
-  
-  coeflist <- vector(mode = "list", length = length(treestruc$nodelist))
-  
-  
-  # Add the information on the tree structure:
-  
-  for(i in seq(along=coeflist)) {
-    
-    coeflist[[i]] <- list()
-
-    # Add the information on the child nodes for each node:
-    coeflist[[i]]$childnodes <- treestruc$nodelist[[i]]
-
-    # Add the information on the parent nodes for each node:
-    coeflist[[i]]$parentnodes <- which(sapply(1:length(coeflist), function(x) i %in% coeflist[[x]]$childnodes))
-
-    # Add the layer of each node:
-    coeflist[[i]]$layer <- which(sapply(1:length(treestruc$leftnodes), function(x) (i >= treestruc$leftnodes[x]) & (i <= treestruc$rightnodes[x])))
-
-  }
-
-  # Simulate the coefficients:
-
-  for(i in seq(along=coeflist)) {
-
-    # If the node has only two child nodes, we need only one set of coefficients:
-    if(length(coeflist[[i]]$childnodes)==2) {
-      coefs <- matrix(nrow=1, ncol=6, data=c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
-    }
-    # If the node has three child nodes, we need two sets of coefficients:
-    if(length(coeflist[[i]]$childnodes)==3) {
-      coefs <- rbind(c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])),
-                     c(rnorm(1, sd=sdbeta0), rnorm(5, sd=sdbeta[coeflist[[i]]$layer])))
-    }
-
-    coeflist[[i]]$coefs <- coefs
-
-  }
-
-  return(coeflist)
-
-}
-
-
-
-
-# Function that takes the covariate matrix of the subset of observations
-# contained in a node and the coefficients associated with that node
-# to output the indices of the child nodes to which the observations
-# get assigned to.
-# Note that the assignments are performed according to a multinomial
-# regression model.
-
-
-# Function input:
-
-# Xsub: The matrix of observations in the current node. Observations in
-# rows and variables in columns.
-# coefs: The matrix of coefficients associated with the current node.
-
-# Function output:
-
-# A vector that gives the index of the child node for each observation.
-
-get_child_nodes <- function(Xsub, coefs, i) {
-
-  # Determine the (unstandardized) probabilities for each child node:
-  
-  desmat <- cbind(1, Xsub)
-
-  # if(i == 34) {
-  # 
-  #   cat("hier", "\n")
-  # 
-  #   cat("ist es", "\n")
-  # 
-  # }
-  
-  if (nrow(coefs)==2)
-    vProb <- cbind(1, exp(desmat%*%coefs[1,]), exp(desmat%*%coefs[2,]))
-  else
-    vProb <- cbind(1, exp(desmat%*%coefs[1,]))
-
-  # Draw the child nodes based on the probabilities obtained in the
-  # first step:
-  
-  mChoices <- t(apply(vProb, 1, rmultinom, n = 1, size = 1))
-  
-  
-  # Make a vector of the child node indices:
-  
-  ys <- apply(mChoices, 1, function(x) which(x==1))
-
-  return(ys)
-
-}
-
-
-
-
-
-
-
-# Function to simulate the data:
-
-
-# Function input:
-
-# n: Number of observations to simulate.
-# coeflist: Result of simulate_coefs. A list that the coefs to be used in the
-# simulation as well as other information about the tree structure.
-
-# Function output:
-
-# A list containing the following:
-# data: The simulated data.frame.
-# coeflist: The input list 'coeflist' to which the simulated data associated
-# with each node was added.
-
-sim_data <- function(n, coeflist) {
-
-  # Simulate the covariate matrix:
-  
-  X <- matrix(nrow=n, ncol=5, rnorm(n*5))
-
-
-  # Simulate the outcome:
-  
-  maxlayer <- max(sapply(coeflist, function(x) x$layer))
-
-  # Outcome matrix with 5 columns, where the j-th column
-  # will contain the classes of the observations in the
-  # j-th layer:
-  outcomemat <- matrix(nrow=nrow(X), ncol=maxlayer)
-
-  
-  # Assign the child node classes of the observations in the root node:
-
-  # Determine the child nodes of the root node:
-  tempclass <- coeflist[[1]]$childnodes[get_child_nodes(X, coeflist[[1]]$coefs, 1)]
-
-  # Assign these child node classes:
-  outcomemat[,1] <- tempclass
-
-
-  # Assign the child node classes of the observations in all other subsequent nodes:
-
-  for(i in 2:length(coeflist)) {
-
-    # Determine the subset of observations that are in the i-th node:
-    subs <- which(outcomemat[,coeflist[[i]]$layer-1]==i)
-    
-    if (length(subs) > 0) {
-    
-    # Determine the child nodes for this subset of observations:
-    tempclass <- coeflist[[i]]$childnodes[get_child_nodes(X[subs, , drop=FALSE], coeflist[[i]]$coefs, i)]
-
-    # Assign these child nodes to the corresponding rows in 'outcomemat':
-    outcomemat[subs,coeflist[[i]]$layer] <- tempclass
-    
-    }
-
-  }
-
-  # Bring the outcome into the format needed by 'hierclass':
-  ystring <- apply(outcomemat, 1, function(x) paste(x, collapse="."))
-
-  allclasses <- sort(unique(unlist(lapply(lapply(unique(ystring), function(x) strsplit(x, split="\\.")[[1]]), function(x) lapply(1:length(x), function(y) paste(x[1:y], collapse="."))))))
-
-  # Make the data.frame:
-  data <- data.frame(X)
-  data$y <- factor(ystring, levels=allclasses)
-
-  return(data)
-
 }

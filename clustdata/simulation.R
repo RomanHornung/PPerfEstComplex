@@ -1,3 +1,5 @@
+# DONE:
+
 # Set working directory:
 
 setwd("~/PPerfEstComplex")
@@ -13,7 +15,6 @@ set.seed(1234)
 seeds <- sample(1000:10000000, size=nrow(scenariogrid))
 
 scenariogrid$seed <- seeds
-
 
 set.seed(1234)
 reorderind <- sample(1:nrow(scenariogrid))
@@ -52,18 +53,19 @@ clusterExport(cl, list=ls())
 
 
 
-# Perform the calculations and save the results (saving is performed within 'evaluatesetting'):
+# Perform the calculations:
 
 results <- parLapply(cl, 1:nrow(scenariogrid), function(z)
   try({evaluatesetting(z)}))
 
-  
+
 
 # Save the results:  
-  
+
 save(results, file="./clustdata/results/intermediate_results/results.Rda")  
-  
-  
+
+
+
 # Stop the cluster:
 
 stopCluster(cl)

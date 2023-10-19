@@ -1,5 +1,7 @@
 # DONE
-############
+#######
+
+# Set working directory:
 
 setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
@@ -63,6 +65,11 @@ results <- reshape(results, varying=c("CV", "stratCV", "truth", "CV_diff", "stra
 
 
 
+# Figures:
+###########
+
+
+
 # Fig. S18: Simulation on hierarchical classification: estimated and (approximated) true evaluation metric values.
 
 resultstemp <- results[results$type %in% c("CV", "stratCV", "truth"),]
@@ -86,7 +93,7 @@ p <- ggplot(resultstemp, aes(x = interaction(type, n), y = value)) + theme_bw() 
 
 p
 
-ggsave("./hierpr/Results/figures/FigureS18.pdf", width=9, height=9)
+ggsave("./hierpr/results/figures/FigureS18.pdf", width=9, height=9)
 
 
 
@@ -116,7 +123,7 @@ p <- ggplot(data=resultstemp, aes(x=n, y=value, fill=type)) + theme_bw() +
   theme(axis.title = element_text(color="black"), legend.position = "none")
 p
 
-ggsave("./hierpr/Results/figures/FigureS19.pdf", width=9, height=9)
+ggsave("./hierpr/results/figures/FigureS19.pdf", width=9, height=9)
 
 
 
@@ -147,7 +154,25 @@ p <- ggplot(data=resultstemp, aes(x=n, y=value, fill=type)) + theme_bw() +
         legend.position = "none")
 p
 
-ggsave("./hierpr/Results/figures/Figure9.pdf", width=10, height=8)
+ggsave("./hierpr/results/figures/Figure9.pdf", width=10, height=8)
+
+
+
+
+
+
+
+
+# Fig. S17: Category tree used in the simulations study.
+
+source("./hierpr/functions.R")
+load("./hierpr/results/intermediate_results/treestruc.Rda")
+
+p <- plot_structure(treestruc)
+
+ggsave("./hierpr/results/figures/FigureS17.pdf", width=18*0.9, height=3.5*0.9)
+
+
 
 
 
@@ -166,11 +191,11 @@ ggsave("./hierpr/Results/figures/Figure9.pdf", width=10, height=8)
 # contained in the training data, SCV still overestimated the true performance, 
 # albeit less strongly and not for all evaluation metrics (results not shown)."
 # is an exception. This statement is supported by the scripts "evaluation_subset_test",
-# "simulation_subset_test.R", and "functions_simulation_subset_test.R".
+# "simulation_subset_test.R", and "functions_subset_test.R".
 #############################################################################
 
 
-source("./hierpr/functions_simulation.R")
+source("./hierpr/functions.R")
 
 
 load("./hierpr/results/intermediate_results/treestruc.Rda")

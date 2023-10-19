@@ -1,3 +1,5 @@
+# DONE:
+
 # Set working directory:
 
 setwd("~/PPerfEstComplex")
@@ -53,7 +55,7 @@ clusterExport(cl, list=ls())
 
 
 
-# Perform the calculations and save the results (saving is performed within 'evaluatesetting'):
+# Perform the calculations:
 
 results <- parLapply(cl, 1:nrow(scenariogrid), function(z)
   try({evaluatesetting(z)}))

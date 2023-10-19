@@ -1,6 +1,6 @@
-# This function performs one repetition of the five times repeated 
-# 5-fold stratified cross-validation on a specific data set using
-# one of the fives compared methods.
+# DONE:
+
+# This function performs one repetition of the simulation.
 #
 # It takes the whole number 'iter', which corresponds to the iter-th line 
 # of 'scenariogrid', which contains the necessary information
@@ -9,16 +9,22 @@
 evaluatesetting <- function(iter) {
   
   # Obtain information for the iter-th setting:
+  
   N <- scenariogrid$N[iter] 
   correct_model <- scenariogrid$correct_model[iter] 
   repetition <- scenariogrid$repetition[iter] 
   seed <- scenariogrid$seed[iter] 
   
+  
   # Set seed:
   
   set.seed(seed)
   
+  
+  # Perform one simulation iteration:
+  
   result <- simulation(N=N, correct_model=correct_model, repetition=repetition)
+  
   
   # Save results:
   
@@ -30,30 +36,24 @@ evaluatesetting <- function(iter) {
 
 
 
-# Function for performing the simulation for a specific setting.
+# Function to perform one simulation iteration for a specific setting.
 
 # Function input:
 
-# niter: number of simulation iterations
-# N: number of clusters
-# ni: number of observations per cluster
-# beta: coefficients of the variables
-# sdbinter: standard deviation of the random intercepts
-# sdbslope: standard deviation of the random slope of variable x3
-# sdeps: standard deviation of the Gaussian noise
-# type: type of variables. Can be "norm" for normally distributed variables
-# and "bin" for binary variables (equal probability for each class)
-# fixed: 
+# N: population size
+# correct_model: boolean. TRUE if the correct model should be used, 
+# FALSE if the misspecified model should be used.
+# repetition: index of the repetition
+# b0: intercept value
+# b1: beta coefficient of x1
+# b2: beta coefficient of x2
 
 # Function output:
 
-# No output. The MSE values resulting when dividing the data into training and test
-# data (a) at the level of the observations and (b) at the level of the clusters.
+# A data.frame containing the estimated and (approximated) true MSE values,
+# as well as information about the simulation setting.
 
-# A data.frame containing the simulated data.
-
-simulation <- function(N, correct_model, repetition, b0 = 5, b1 = 1, b2 = 1)
-{
+simulation <- function(N, correct_model, repetition, b0 = 5, b1 = 1, b2 = 1) {
   
   library("mlr3")
   library("mlr3learners")
@@ -62,18 +62,16 @@ simulation <- function(N, correct_model, repetition, b0 = 5, b1 = 1, b2 = 1)
   library("dplyr")
   
   lgr::get_logger("mlr3")$set_threshold("warn")
-  
-  # Repeat:
-  # Generate Population + (large) test set
-  
-  #####N <- experiments$N[k]
-  n <- N/100
-  #####correct_model <- experiments$correct_model[k]
-  
+ 
+ 
+ # Simulate the population and the huge test data set:
+ 
   train_data <- generate_data(N, b0, b1, b2)
   test_data <- generate_data(N=200000, b0, b1, b2)
   
-  # Calculate the auxiliary variable for PPS sampling
+  
+  # Calculate the auxiliary variable for PPS sampling:
+  
   valid <- FALSE
   while(!valid){
     u <- train_data$y + rnorm(N)
@@ -82,21 +80,29 @@ simulation <- function(N, correct_model, repetition, b0 = 5, b1 = 1, b2 = 1)
     }
   }
   
-  # Draw PPS-sample
+  # Calculate the weights and draw the PPS sample:
+  
+  n <- N/100
   w <- n*u/(sum(u))
   ids <- sample(1:N, n, prob = w)
   sample_weights <- w[ids]
   
-  # if not the correct model exclude one of the covariates
+  
+  # if not the correct model exclude one of the covariates:
+  
   if(!correct_model){
     train_data <- train_data %>% select(-x2)
     test_data <- test_data %>% select(-x2)
   }
   
-  # Take the sample
+  
+  # Take the sample:
+  
   train_data <- train_data[ids,]
   
-  # Estimate generalization performance via CV (mlr3)
+  
+  # Estimate generalization performance via CV:
+  
   task_sp <- as_task_regr(y ~ ., data = train_data)
   measure <- msr("regr.mse")
   
@@ -114,15 +120,24 @@ simulation <- function(N, correct_model, repetition, b0 = 5, b1 = 1, b2 = 1)
   bmr <- benchmark(design)
   tab <- bmr$aggregate(measure)
   estimated_error <- tab$regr.mse
+  
+# Calculate HT corrected CV estimate:
+  
   corrected_estimates <- HT_correction(bmr, w, N, sample_weights, nrep)
   
-  # Use test set to get "true" generalization performance
+  
+  # Approximate the true MSE using the huge test data set:
+  
   true_error <- c()
   for(j in 1:length(learnerlist)){
     learnerlist[[j]]$train(task_sp)
     outpreds <- learnerlist[[j]]$predict_newdata(test_data)
     true_error[j] <- outpreds$score(measure)
   }
+  
+  
+  
+  # Combine the results:
   
   result <- data.frame(iter = repetition,
                        n = n,
@@ -131,6 +146,9 @@ simulation <- function(N, correct_model, repetition, b0 = 5, b1 = 1, b2 = 1)
                        estimated_error = estimated_error,
                        corrected = corrected_estimates,
                        true_error = true_error)
+  
+  
+  # Return the results:
   
   return(result)
   
@@ -141,9 +159,22 @@ simulation <- function(N, correct_model, repetition, b0 = 5, b1 = 1, b2 = 1)
 
 
 
-# Simulation settings
-# regression model
-generate_data <- function(N, b0, b1, b2, sigma = 1){
+
+# Function to simulate a dataset.
+
+# Function input:
+
+# N: number of observations
+# b0: intercept value
+# b1: beta coefficient of x1
+# b2: beta coefficient of x2
+# sigma: standard deviation of the error term
+
+# Function output:
+
+# The simulated data set
+
+generate_data <- function(N, b0, b1, b2, sigma = 1) {
   x1 <- rgamma(N, 0.1, 0.1)
   x2 <- rgamma(N, 0.1, 0.1)
   x3 <- rnorm(N)
@@ -154,7 +185,24 @@ generate_data <- function(N, b0, b1, b2, sigma = 1){
 }
 
 
-# Horvitz Thompson correction (equation 14 from the paper)
+
+
+
+
+
+
+# Function to calculate the Horvitz Thompson corrected MSE estimate (equation (7) from the paper).
+
+# Function input:
+
+# bmr: benchmark object from mlr3
+# w: the weights with which the observations were drawn from the population
+# sample_weights: the subset of "w" that corresponds to the observations in the sample of size 'n' from the population
+# nrep: the number of repetitions of the CV
+
+# Function output:
+
+# The Horvitz-Thompson correct MSE estimate.
 
 HT_correction <- function(bmr, w, N, sample_weights, nrep){
   
@@ -169,9 +217,12 @@ HT_correction <- function(bmr, w, N, sample_weights, nrep){
       true_val <- fold_frame$response
       pred_val <- fold_frame$truth
       w_fold <- sample_weights[fold_frame$row_ids]
-      error[fold, kk] <- (sum((w_fold^-1)*((true_val-pred_val)^2)))/N
+      error[fold, kk] <- (sum((w_fold^-1)*((true_val-pred_val)^2)))/N  # divide by "N" here, compare equation (7) from the paper.
     }
   }
   
+  # Note that we have to divide by the number of
+  # repetitions of the CV (in equation (7) from the paper we only
+  # performed single not repeated CV, which is why this was not necessary there):
   apply(error, 2, sum)/nrep
 }

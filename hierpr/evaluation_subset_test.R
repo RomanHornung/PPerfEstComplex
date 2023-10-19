@@ -1,4 +1,9 @@
-setwd("C:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex/PPerfEstComplex")
+# DONE
+#######
+
+# Set working directory:
+
+setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
 # Load and pre-process the results:
@@ -15,9 +20,6 @@ scengrid$seed_start <- scengrid$seed_res <- NULL
 
 scengrid <- scengrid[rep(1:nrow(scengrid), times=sapply(results, nrow)),]
 
-head(scengrid, 12)
-
-head(scenariogrid)
 
 resultstab <- do.call("rbind", results)
 
@@ -57,20 +59,18 @@ results <- reshape(results, varying=c("CV", "stratCV", "truth", "CV_diff", "stra
                    direction="long")
 
 
-library("plyr")
-
-resultspercdiffvar <- ddply(results[results$type %in% c("CV_percdiff", "stratCV_percdiff"),], .variables=c("n", "measure", "type"), 
-                           .fun=summarise, var=var(value))
 
 
-library("RColorBrewer")
-
-display.brewer.all(n=3, type="div")
-
-colors <- brewer.pal(3, "RdBu")
-selectedColors <- c(colors[1], colors[3])
 
 
+
+
+# Figures:
+###########
+
+
+
+# Simulation on hierarchical classification: estimated and (approximated) true evaluation metric values.
 
 resultstemp <- results[results$type %in% c("CV", "stratCV", "truth"),]
 resultstemp$type <-factor(resultstemp$type, levels=c("CV", "stratCV", "truth"))
@@ -93,13 +93,24 @@ p <- ggplot(resultstemp, aes(x = interaction(type, n), y = value)) + theme_bw() 
 
 p
 
-ggsave("./hierpr/Results/figures/hierpr_raw_values_subset_test.pdf", width=9, height=9)
+ggsave("./hierpr/results/figures/hierpr_raw_values_subset_test.pdf", width=9, height=9)
 
 
 
 
 
 
+
+
+# Simulation on hierarchical classification: differences between 
+# estimated and true evaluation metric values divided by true values.
+
+library("RColorBrewer")
+
+display.brewer.all(n=3, type="div")
+
+colors <- brewer.pal(3, "RdBu")
+selectedColors <- c(colors[1], colors[3])
 
 resultstemp <- results[results$type %in% c("CV_percdiff", "stratCV_percdiff"),]
 resultstemp$type <-factor(resultstemp$type, levels=c("CV_percdiff", "stratCV_percdiff"))
@@ -112,4 +123,4 @@ p <- ggplot(data=resultstemp, aes(x=n, y=value, fill=type)) + theme_bw() +
   theme(axis.title = element_text(color="black"), legend.position = "none")
 p
 
-ggsave("./hierpr/Results/figures/hierpr_standardized_difference_subset_test.pdf", width=9, height=9)
+ggsave("./hierpr/results/figures/hierpr_standardized_difference_subset_test.pdf", width=9, height=9)

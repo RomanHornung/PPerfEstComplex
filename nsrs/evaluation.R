@@ -1,7 +1,15 @@
+# DONE
+#######
+
+# Set working directory:
+
 setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
 
 
-# Load the results:
+
+
+# Load and pre-process the results:
+###################################
 
 load("./nsrs/results/intermediate_results/results.Rda")
 load("./nsrs/results/intermediate_results/scenariogrid.Rda")
@@ -10,19 +18,18 @@ reorderind <- order(scenariogrid$N, scenariogrid$repetition, scenariogrid$correc
 results <- results[reorderind]
 scenariogrid <- scenariogrid[reorderind,]
 
-head(scenariogrid)
-head(results)
-
-
 results <- do.call("rbind", results)
+
+
+
+
+
+
+# Fig. 4: Simulation on unequal sampling probabilities: differences between estimated and true MSE values.
 
 
 library("ggplot2")
 library("dplyr")
-
-
-
-# Visualise the results and analyse the bias:
 
 library("RColorBrewer")
 

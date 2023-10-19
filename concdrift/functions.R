@@ -1,13 +1,13 @@
-# This function performs one repetition of the five times repeated 
-# 5-fold stratified cross-validation on a specific data set using
-# one of the fives compared methods.
+# DONE:
+
+# This function performs one repetition of the simulation.
 #
 # It takes the whole number 'iter', which corresponds to the iter-th line 
 # of 'scenariogrid', which contains the necessary information
 # on the iter-th setting.
 
 evaluatesetting <- function(iter) {
-  
+    
   # Obtain information for the iter-th setting:
   
   xtrend <- scenariogrid$xtrend[iter] 
@@ -41,19 +41,17 @@ evaluatesetting <- function(iter) {
   if (ytrend == "strong") {
     ymuend <- 8; yvarend <- 8
   }
-  
+    
   # Set seed:
   
   set.seed(seed)
   
   res <- simulation(n=n, x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, ymuend=ymuend, yvarend=yvarend)
   
-  
-  save(res, file=paste0("./concdrift/results/intermediate_results/res_", iter, ".Rda"))
-  
-  # Save results:
+  # Return results:
   
   return(res)
+  
 }
 
 
@@ -61,13 +59,26 @@ evaluatesetting <- function(iter) {
 
 
 
+# Function to perform one simulation iteration for a specific setting.
 
+# Function input:
+
+# n: number of training observations
+# x1muend: expectancy of x1 at the end of the considered interval
+# x2muend: expectancy of x2 at the end of the considered interval
+# x3muend: expectancy of x3 at the end of the considered interval
+# ymuend: intercept at the end of the considered interval
+# yvarend: variance of the Gaussian noise at the end of the considered interval
+
+# Function output:
+
+# The estimated and (approximated) true MSE values
 
 simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6) {
   
   setwd(wd)
   
-  # We simulate 7 seasons, 5 seasons for training and 2 seasons as future seasons
+  # We simulate 10 seasons, 8 seasons for training and 2 seasons as future seasons
   # for testing. The following object give the time intervals of the seasons,
   # where we also include the midpoints in the last two seasons because we will
   # evaluate the error here as well.
@@ -95,7 +106,6 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   learner_temp_rf <- lrn("regr.ranger")
   learner_temp_lm <- lrn("regr.lm")
   
-
   
   
   # Suppress warning from mlr3:
@@ -121,9 +131,8 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
 
   
   
-  # Time series CV - predict next season:
-  
   # Determine the indices of the training and test sets for the times series CV:
+  
   sizes <- rep(floor(n/8), 8)
   if(n - 8*floor(n/8) > 0)
     sizes[1:(n - 8*floor(n/8))] <- sizes[1:(n - 8*floor(n/8))] + 1
@@ -132,6 +141,11 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   
   test_setsTS_1s <- lapply(data.frame(rbind(cumsum(sizes[-length(sizes)]) + 1, cumsum(sizes)[-1])), function(x) x[1]:x[2])
   test_setsTS_2s <- test_setsTS_1s[-1]
+  
+  
+  
+  # Time series CV - predict next season:
+  
   TScv <- rsmp("custom")
   TScv$instantiate(task, train_setsTS_1s, test_setsTS_1s)
   
@@ -154,8 +168,8 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
 
   
   
-  # Hold-out - predict last (i.e., seventh) season, train on first
-  # to sixth season:
+  # Out-of-sample validation - predict last (i.e., eigth) season, train on first
+  # to seventh season:
   
   learner_temp_rf$train(task, row_ids = train_setsTS_1s[[length(train_setsTS_1s)]])
   
@@ -169,8 +183,8 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
 
   
   
-  # Hold-out - predict last (i.e., seventh) season, train on first
-  # to fifth season:
+  # Out-of-sample validation - predict last (i.e., eigth) season, train on first
+  # to sixth season:
     
   learner_temp_rf$train(task, row_ids = train_setsTS_2s[[length(train_setsTS_2s)]])
   
@@ -184,12 +198,13 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
 
   
   
-  # asdf
+  # Train on the whole training data set and evaluate on the huge tests
+  # to approximate the true performance metric values:
+
   train_task <- as_task_regr(datatrain, target = "y")
   learner_temp_rf$train(train_task)
   learner_temp_lm$train(train_task)
 
-  
   mse_true_lm <- c()
   mse_true_rf <- c()
   
@@ -221,11 +236,15 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
   mse_true_end2fu_rf <- mse_true_rf[5]
   
   
+  # Combine the results:
+  
   res <- list(mse_cv_rf=mse_cv_rf, mse_cv_lm=mse_cv_lm, mse_TScv_1s_rf=mse_TScv_1s_rf, mse_TScv_1s_lm=mse_TScv_1s_lm, mse_TScv_2s_rf=mse_TScv_2s_rf, mse_TScv_2s_lm=mse_TScv_2s_lm, 
               mse_TSholdout_1s_rf=mse_TSholdout_1s_rf, mse_TSholdout_1s_lm=mse_TSholdout_1s_lm, mse_TSholdout_2s_rf=mse_TSholdout_2s_rf, mse_TSholdout_2s_lm=mse_TSholdout_2s_lm, 
               mse_true_endlast_rf=mse_true_endlast_rf, mse_true_endlast_lm=mse_true_endlast_lm, mse_true_mid1fu_rf=mse_true_mid1fu_rf, mse_true_mid1fu_lm=mse_true_mid1fu_lm, 
               mse_true_end1fu_rf=mse_true_end1fu_rf, mse_true_end1fu_lm=mse_true_end1fu_lm, mse_true_mid2fu_rf=mse_true_mid2fu_rf, mse_true_mid2fu_lm=mse_true_mid2fu_lm, 
               mse_true_end2fu_rf=mse_true_end2fu_rf, mse_true_end2fu_lm=mse_true_end2fu_lm)
+  
+  # Return the results:
   
   return(res)
   
@@ -238,13 +257,53 @@ simulation <- function(n, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6)
 
 
 
+# Function to simulate a dataset.
+
+# Function input:
+
+# timepoints: The time points at which to simulate the observations. At each
+# time point a single observation is simulated.
+# x1muend: expectancy of x1 at the end of the considered interval
+# x2muend: expectancy of x2 at the end of the considered interval
+# x3muend: expectancy of x3 at the end of the considered interval
+# ymuend: intercept at the end of the considered interval
+# yvarend: variance of the Gaussian noise at the end of the considered interval
+
+# Function output:
+
+# The simulated data set
+
+sim_dataset <- function(timepoints, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6) {
+  
+  dataset <- data.frame(t(sapply(timepoints, function(x) 
+    sim_obs(x, x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, 
+            ymuend=ymuend, yvarend=yvarend))))
+  names(dataset)[ncol(dataset)] <- "y"
+  
+  return(dataset)
+  
+}
 
 
+
+
+
+
+
+# Function to get the value of a parameter at a given time.
+
+# Function input:
+
+# t: time at which the parameter value is to be obtained.
+# startval: value of the parameter at the beginning of the considered interval
+# stopval: value of the parameter at the end of the considered interval
+
+# Function output:
+
+# The value of the parameter
 
 getcoef <- function(t, startval, stopval) {
-  
-  # startval <- 0
-  # stopval <- 8
+
   tstart <- 0
   tend <- 1
   
@@ -259,6 +318,22 @@ getcoef <- function(t, startval, stopval) {
 
 
 
+
+# Function to simulate a single observation at a given time.
+
+# Function input:
+
+# t: time at which the observation should be simulated.
+# x1muend: expectancy of x1 at the end of the considered interval
+# x2muend: expectancy of x2 at the end of the considered interval
+# x3muend: expectancy of x3 at the end of the considered interval
+# ymuend: intercept at the end of the considered interval
+# yvarend: variance of the Gaussian noise at the end of the considered interval
+
+# Function output:
+
+# A vector of length 6, where the first 5 elements are the feature
+# values and the last element is the label value
 
 sim_obs <- function(t, x1muend=8, x2muend=4, x3muend=-8,
                     ymuend=6, yvarend=6) {
@@ -275,40 +350,3 @@ sim_obs <- function(t, x1muend=8, x2muend=4, x3muend=-8,
   return(c(xvec, y))
   
 }
-
-
-# Function for performing the simulation for a specific setting.
-
-# Function input:
-
-# niter: number of simulation iterations
-# N: number of clusters
-# ni: number of observations per cluster
-# beta: coefficients of the variables
-# sdbinter: standard deviation of the random intercepts
-# sdbslope: standard deviation of the random slope of variable x3
-# sdeps: standard deviation of the Gaussian noise
-# type: type of variables. Can be "norm" for normally distributed variables
-# and "bin" for binary variables (equal probability for each class)
-# fixed: 
-
-# Function output:
-
-# No output. The MSE values resulting when dividing the data into training and test
-# data (a) at the level of the observations and (b) at the level of the clusters.
-
-# A data.frame containing the simulated data.
-
-sim_dataset <- function(timepoints, x1muend=8, x2muend=4, x3muend=-8, ymuend=6, yvarend=6) {
-  
-  dataset <- data.frame(t(sapply(timepoints, function(x) 
-    sim_obs(x, x1muend=x1muend, x2muend=x2muend, x3muend=x3muend, 
-            ymuend=ymuend, yvarend=yvarend))))
-  names(dataset)[ncol(dataset)] <- "y"
-  
-  return(dataset)
-  
-}
-
-
-

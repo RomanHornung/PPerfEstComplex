@@ -1,3 +1,5 @@
+# DONE:
+
 # Set working directory:
 
 setwd("~/PPerfEstComplex")
@@ -19,7 +21,6 @@ set.seed(1234)
 seeds <- sample(1000:10000000, size=nrow(scenariogrid))#sample(1000:10000000, size=length(n)*length(ytrend)*length(xtrend)*length(repetition))
 
 scenariogrid$seed <- seeds#rep(seeds, each=length(predmethod))
-
 
 set.seed(1234)
 reorderind <- sample(1:nrow(scenariogrid))
@@ -59,7 +60,7 @@ clusterExport(cl, list=ls())
 
 
 
-# Perform the calculations and save the results (saving is performed within 'evaluatesetting'):
+# Perform the calculations:
 
 results <- parLapply(cl, 1:nrow(scenariogrid), function(z)
   try({evaluatesetting(z)}))

@@ -1,6 +1,6 @@
-# This function performs one repetition of the five times repeated 
-# 5-fold stratified cross-validation on a specific data set using
-# one of the fives compared methods.
+# DONE:
+
+# This function performs one repetition of the simulation.
 #
 # It takes the whole number 'iter', which corresponds to the iter-th line 
 # of 'scenariogrid', which contains the necessary information
@@ -10,24 +10,27 @@ evaluatesetting <- function(iter) {
   
   # Obtain information for the iter-th setting:
   
-N <- scenariogrid$N[iter] 
-ni <- scenariogrid$ni[iter] 
-sdbinter <- scenariogrid$sdbinter[iter] 
-sdbslope <- scenariogrid$sdbslope[iter] 
-sdeps <- scenariogrid$sdeps[iter] 
-fixed <- scenariogrid$fixed[iter]
-repetition <- scenariogrid$repetition[iter] 
-seed <- scenariogrid$seed[iter] 
+  N <- scenariogrid$N[iter] 
+  ni <- scenariogrid$ni[iter] 
+  sdbinter <- scenariogrid$sdbinter[iter] 
+  sdbslope <- scenariogrid$sdbslope[iter] 
+  sdeps <- scenariogrid$sdeps[iter] 
+  fixed <- scenariogrid$fixed[iter]
+  repetition <- scenariogrid$repetition[iter] 
+  seed <- scenariogrid$seed[iter] 
   
   # Set seed:
   
   set.seed(seed)
   
-  result <- simulation(niter=1, N=N, ni=ni, beta=c(1, 1, -1, 0, 0), sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed, method="rf")
+  # Perform simulation iteration:
   
-  # Save results:
+  result <- simulation(niter=1, N=N, ni=ni, beta=c(1, 1, -1, 0, 0), sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed)
+  
+  # Return results:
   
   return(result)
+  
 }
 
 
@@ -37,7 +40,7 @@ seed <- scenariogrid$seed[iter]
 
 
 
-# Function for simulating the datasets.
+# Function to simulate a dataset.
 
 # Function input:
 
@@ -45,15 +48,15 @@ seed <- scenariogrid$seed[iter]
 # ni: number of observations per cluster
 # beta: coefficients of the variables
 # sdbinter: standard deviation of the random intercepts
-# sdbslope: standard deviation of the random slope of variable x1
+# sdbslope: standard deviation of the random slope of feature x1
 # sdeps: standard deviation of the Gaussian noise
-# type: type of variables. Can be "norm" for normally distributed variables
-# and "bin" for binary variables (equal probability for each class)
-# fixed: 
+# fixed: "none", "first", or "second". Specifies which feature should be constant within clusters
 
 # Function output:
 
-# A data.frame containing the simulated data.
+# dataset: The simulated data set
+# b: The values of the random intercept
+# b2: The values of the random slope of variable x1
 
 simuldata <- function(N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, fixed=c("none", "first", "second"))
 {
@@ -64,11 +67,11 @@ simuldata <- function(N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0
   
   index <- rep(1:N, each=ni)
   
-if (fixed=="first")
+  if (fixed=="first")
     x[, 1] <- rnorm(N)[index]
   if (fixed=="second")
     x[, 2] <- rnorm(N)[index]
-
+  
   b <- rep(rnorm(N, sd=sdbinter), each=ni)
   b2 <- rep(rnorm(N, sd=sdbslope), each=ni)
   eps <- rnorm(N*ni, sd=sdeps)
@@ -84,7 +87,8 @@ if (fixed=="first")
 
 
 
-# Function for performing the simulation for a specific setting.
+
+# Function to perform the simulation for a specific setting.
 
 # Function input:
 
@@ -95,18 +99,13 @@ if (fixed=="first")
 # sdbinter: standard deviation of the random intercepts
 # sdbslope: standard deviation of the random slope of variable x3
 # sdeps: standard deviation of the Gaussian noise
-# type: type of variables. Can be "norm" for normally distributed variables
-# and "bin" for binary variables (equal probability for each class)
-# fixed: 
+# fixed: "none", "first", or "second". Specifies which feature should be constant within clusters
 
 # Function output:
 
-# No output. The MSE values resulting when dividing the data into training and test
-# data (a) at the level of the observations and (b) at the level of the clusters.
+# The MSE values estimated using standard and grouped CV.
 
-# A data.frame containing the simulated data.
-
-simulation <- function(niter, N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, fixed=c("none", "first", "second"), method="lm")
+simulation <- function(niter, N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, fixed=c("none", "first", "second"))
 {
   
   require("mlr3")
@@ -119,17 +118,13 @@ simulation <- function(niter, N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sd
   learner_temp_rf <- lrn("regr.ranger")
   learner_temp_lm <- lrn("regr.lm")
   
-  # set_threads(learner_temp, n = 1)
-  
   lgr::get_logger("mlr3")$set_threshold("warn")
   
   for (i in 1:niter)
   {
-    # print(i)
     simuldati <- simuldata(N=N, ni=ni, beta=beta, sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed)$dataset
     task_i <- as_task_regr(simuldati, target="y")
     task_i$set_col_roles(cols="index", remove_from="feature")
-    # subsamp0.8 <- rsmp("subsampling", repeats = 100, ratio = 0.8)
     cv3 <- rsmp("repeated_cv", repeats = 10, folds = 5)
     cv3$instantiate(task_i)
     result_cv3 <- resample(task=task_i, learner=learner_temp_rf, resampling=cv3)
@@ -147,6 +142,5 @@ simulation <- function(niter, N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sd
   }
   result <- list(mse_cv3_rf=mse_cv3_rf, mse_cv3_lm=mse_cv3_lm, mse_cv3g_rf=mse_cv3g_rf, mse_cv3g_lm=mse_cv3g_lm)
   return(result)
-  # save(result, file=paste("./clustdata/Results/intermediate_results/N", N, "ni", ni, "beta", paste(beta, collapse=""), "sdbinter", sdbinter, "sdbslope", sdbslope, "sdeps", sdeps, fixed, ".RData", sep=""))
   
 }

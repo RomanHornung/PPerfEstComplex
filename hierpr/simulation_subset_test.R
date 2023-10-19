@@ -1,3 +1,5 @@
+# DONE:
+
 # Set working directory:
 
 setwd("~/PPerfEstComplex")
@@ -36,7 +38,7 @@ wd <- getwd()
 # Source the functions that are used in performing the calculations 
 # on the cluster:
 
-source("./hierpr/functions_simulation_subset_test.R")
+source("./hierpr/functions_subset_test.R")
 
 
 
@@ -56,7 +58,7 @@ clusterExport(cl, list=ls())
 
 
 
-# Perform the calculations and save the results (saving is performed within 'evaluatesetting'):
+# Perform the calculations:
 
 
 results <- parLapply(cl, 1:nrow(scenariogrid), function(z)
