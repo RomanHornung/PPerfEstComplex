@@ -1,9 +1,17 @@
-# DONE
-#######
+####################################################################################
 
-# Set working directory:
+# NOTE: Before the code can be executed, the R working directory *MUST* 
+# be set to the directory of the 'PPerfEstComplex' folder (for Linux
+# systems, R can also be run directly from the 'PPerfEstComplex'
+# directory):
 
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+# Remove the '#' from the line below and replace 'this/is/my/path/' by the path
+# to the directory that contains 'PPerfEstComplex':
+
+# setwd("this/is/my/path/PPerfEstComplex")
+
+####################################################################################
+
 
 
 # Load and pre-process the results:
@@ -113,13 +121,14 @@ selectedColors <- c(colors[1], colors[3])
 levels(res$predmethod) <- c("linear models", "random forests")
 
 library("ggplot2")
+
 p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ predmethod + xtrend + ytrend, ncol = 4, scales="free_y") +
   theme(axis.title.x=element_blank(), 
-        axis.title.y=element_text(size=14), 
-        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
-        axis.text.y = element_text(color="black", size=11), 
-        strip.text = element_text(size=12),
+        axis.title.y=element_text(size=17), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=15), 
+        axis.text.y = element_text(color="black", size=14), 
+        strip.text = element_text(size=17),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
   scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)

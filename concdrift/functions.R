@@ -1,5 +1,3 @@
-# DONE:
-
 # This function performs one repetition of the simulation.
 #
 # It takes the whole number 'iter', which corresponds to the iter-th line 

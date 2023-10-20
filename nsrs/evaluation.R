@@ -1,10 +1,16 @@
-# DONE
-#######
+####################################################################################
 
-# Set working directory:
+# NOTE: Before the code can be executed, the R working directory *MUST* 
+# be set to the directory of the 'PPerfEstComplex' folder (for Linux
+# systems, R can also be run directly from the 'PPerfEstComplex'
+# directory):
 
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+# Remove the '#' from the line below and replace 'this/is/my/path/' by the path
+# to the directory that contains 'PPerfEstComplex':
 
+# setwd("this/is/my/path/PPerfEstComplex")
+
+####################################################################################
 
 
 
@@ -71,10 +77,10 @@ p <- ggplot(data=ggframe, aes(y=bias, x = model, fill = type)) +
   facet_wrap(~correctmod+n, nrow=2, scales="free_y") + 
   scale_fill_manual(values=selectedColors) +
   theme_bw() + theme(axis.title.x=element_blank(), 
-                     axis.title.y=element_text(size=19), 
-                     axis.text.x = element_text(angle=45, hjust = 1, color="black", size=19), 
+                     axis.title.y=element_text(size=17), 
+                     axis.text.x = element_text(angle=45, hjust = 1, color="black", size=17), 
                      axis.text.y = element_text(color="black", size=14), 
-                     strip.text = element_text(size=19),
+                     strip.text = element_text(size=17),
                      legend.position = "none")
 p
 

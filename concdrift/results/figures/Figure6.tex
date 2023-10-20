@@ -18,10 +18,10 @@
 \def\x1{0}
 \def\y1{0}
 
-\draw[thick, fill = ggplot2facetbg, line width = 1, draw = black] (\x1, \y1 + 1 + 2 + 1.25) rectangle (\x1 + 8 + 0.8 + 1 + 1 + 1, \y1 + 1 + 0.5 + 1) node[pos=.5, font = \huge\sffamily, black, align=center] {Prequential validation};
+\draw[thick, fill = white, line width = 1, draw = black, rounded corners] (\x1, \y1 + 1 + 2 + 1.45) rectangle (\x1 + 8 + 0.8 + 1 + 1 + 1, \y1 + 1 + 0.3 + 1) node[pos=.5, font = \Huge\bfseries, black, align=center] {Prequential validation};
 
 % Insert the "i = 1, ..." text
-\node[scale=2, font=\sffamily, black, align=center] at (\x1 + 0.7, \y1 + 1 + 0.7) {i = 1, . . .};
+\node[scale=2, font=\sffamily\boldmath, black, align=center] at (\x1 + 0.75, \y1 + 1 + 0.7) {$i = 1, \; . \;\, . \;\, .$};
 
 % boxes
 \draw[fill = traincolor, draw = black, rounded corners] (\x1, \y1) rectangle +(1, 1) node[pos=.5, font = \huge] {};
@@ -51,10 +51,10 @@
 \def\x2{0}
 \def\y2{-8.3}
 
-\draw[thick, fill = ggplot2facetbg, line width = 1, draw = black] (\x2, \y2 + 2 + 1.25) rectangle (\x2 + 8 + 0.8 + 1 + 1 + 1, \y2 + 0.5 + 1) node[pos=.5, font = \huge\sffamily, black, align=center] {Prequential validation\\with buffer};
+\draw[thick, fill = white, line width = 1, draw = black, rounded corners] (\x2, \y2 + 2 + 1.45) rectangle (\x2 + 8 + 0.8 + 1 + 1 + 1, \y2 + 0.3 + 1) node[pos=.5, font = \Huge\bfseries, black, align=center] {Prequential validation\\with buffer};
 
 % Insert the "i = 1, ..." text
-\node[scale=2, font=\sffamily, black, align=center] at (\x2 + 0.7, \y2 + 0.7) {i = 1, . . .};
+\node[scale=2, font=\sffamily\boldmath, black, align=center] at (\x2 + 0.75, \y2 + 0.7) {$i = 1, \; . \;\, . \;\, .$};
 
 % boxes
 \draw[fill = traincolor, draw = black, rounded corners] (\x2, \y2 - 1) rectangle +(1, 1) node[pos=.5, font = \huge] {};
@@ -84,10 +84,10 @@
 \def\x3{13.8}
 \def\y3{0}
 
-\draw[thick, fill = ggplot2facetbg, line width = 1, draw = black] (\x3, \y3 + 1 + 2 + 1.25) rectangle (\x3 + 8 + 0.8 + 1 + 1 + 1, \y3 + 1 + 0.5 + 1) node[pos=.5, font = \huge\sffamily, black, align=center] {Out-of-sample validation};
+\draw[thick, fill = white, line width = 1, draw = black, rounded corners] (\x3, \y3 + 1 + 2 + 1.45) rectangle (\x3 + 8 + 0.8 + 1 + 1 + 1, \y3 + 1 + 0.3 + 1) node[pos=.5, font = \Huge\bfseries, black, align=center] {Out-of-sample validation};
 
 % Insert the "i = 1, ..." text without the "n"
-\node[scale=2, font=\sffamily, black, align=center] at (\x3 + 0.7, \y3 + 0.2) {i = 1, . . .};
+\node[scale=2, font=\sffamily\boldmath, black, align=center] at (\x3 + 0.75, \y3 + 0.2) {$i = 1, \; . \;\, . \;\, .$};
 
 % Insert the "n" text above the last box of color "testcolor"
 \node[scale=2, font=\sffamily\boldmath, black] at (\x3 + 9 + 0.9 + 0.5 + 0.55, \y3 + 0.2) {$n_{\mathrm{train}}$};
@@ -107,10 +107,10 @@
 \def\x4{13.8}
 \def\y4{-8.3}
 
-\draw[thick, fill = ggplot2facetbg, line width = 1, draw = black] (\x4, \y4 + 2 + 1.25) rectangle (\x4 + 8 + 0.8 + 1 + 1 + 1, \y4 + 0.5 + 1) node[pos=.5, font = \huge\sffamily, black, align=center] {Out-of-sample validation\\with buffer};
+\draw[thick, fill = white, line width = 1, draw = black, rounded corners] (\x4, \y4 + 2 + 1.45) rectangle (\x4 + 8 + 0.8 + 1 + 1 + 1, \y4 + 0.3 + 1) node[pos=.5, font = \Huge\bfseries, black, align=center] {Out-of-sample validation\\with buffer};
 
 % Insert the "i = 1, ..." text without the "n"
-\node[scale=2, font=\sffamily, black, align=center] at (\x4 + 0.7, \y4 + 0.2 - 1) {i = 1, . . .};
+\node[scale=2, font=\sffamily\boldmath, black, align=center] at (\x4 + 0.75, \y4 + 0.2 - 1) {$i = 1, \; . \;\, . \;\, .$};
 
 % Insert the "n" text above the last box of color "testcolor"
 \node[scale=2, font=\sffamily\boldmath, black] at (\x4 + 9 + 0.9 + 0.5 + 0.55, \y4 + 0.2 - 1) {$n_{\mathrm{train}}$};

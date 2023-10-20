@@ -1,9 +1,16 @@
-# DONE
-#######
+####################################################################################
 
-# Set working directory:
+# NOTE: Before the code can be executed, the R working directory *MUST* 
+# be set to the directory of the 'PPerfEstComplex' folder (for Linux
+# systems, R can also be run directly from the 'PPerfEstComplex'
+# directory):
 
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+# Remove the '#' from the line below and replace 'this/is/my/path/' by the path
+# to the directory that contains 'PPerfEstComplex':
+
+# setwd("this/is/my/path/PPerfEstComplex")
+
+####################################################################################
 
 
 
@@ -212,4 +219,4 @@ library("gridExtra")
 p <- grid.arrange(p1, p2, p3, ncol=3)
 p
 
-ggsave("./spatial/results/figures/Figure3.pdf", plot=p, width=10*1.5, height=3.5*1.5)
+ggsave("./spatial/Figure3.pdf", plot=p, width=10*1.5, height=3.5*1.5)

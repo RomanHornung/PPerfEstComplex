@@ -1,9 +1,17 @@
-# DONE
-#######
+####################################################################################
 
-# Set working directory:
+# NOTE: Before the code can be executed, the R working directory *MUST* 
+# be set to the directory of the 'PPerfEstComplex' folder (for Linux
+# systems, R can also be run directly from the 'PPerfEstComplex'
+# directory):
 
-setwd("Z:/Projects/DESTATIS/PredErrorComplex/PPerfEstComplex")
+# Remove the '#' from the line below and replace 'this/is/my/path/' by the path
+# to the directory that contains 'PPerfEstComplex':
+
+# setwd("this/is/my/path/PPerfEstComplex")
+
+####################################################################################
+
 
 
 # Load and pre-process the results:
