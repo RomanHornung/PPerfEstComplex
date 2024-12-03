@@ -46,7 +46,7 @@ other attached packages:
  [1] sf_1.0-12               scales_1.2.1            RColorBrewer_1.1-3      ranger_0.15.1           mlr3verse_0.2.7        
  [6] mlr3temporal_0.1.0.9000 mlr3learners_0.5.6      mlr3_0.15.0             measures_0.3            hierclass_0.1.0        
 [11] gridExtra_2.3           ggpubr_0.6.0            ggforce_0.4.1           ggplot2_3.4.1           dplyr_1.1.1            
-[16] data.table_1.14.8      
+[16] data.table_1.14.8       patchwork_1.2.0
 
 loaded via a namespace (and not attached):
  [1] bbotk_0.7.2            prabclus_2.3-2         mlr3pipelines_0.4.3    tools_4.2.3            backports_1.4.1       
@@ -77,9 +77,9 @@ General information and contents of this Electronic Appendix:
 
 - PPerfEstComplex' contains the following subfolders: 'clustdata': This subfolder contains the 
   code to reproduce and evaluate the clustered data simulation study; 'concdrift': This subfolder 
-  contains the code to reproduce and evaluate the concept drift simulation study; 'hierpr': This 
-  subfolder contains the code to reproduce and evaluate the simulation study on hierarchically 
-  structured outcomes; 'nsrs': This subfolder contains the code to reproduce and evaluate the 
+  contains the code to reproduce and evaluate the concept drift simulation study and real data analysis;
+  'hierpr': This subfolder contains the code to reproduce and evaluate the simulation study on 
+  hierarchically structured outcomes; 'nsrs': This subfolder contains the code to reproduce and evaluate the 
   unequal sampling probabilities simulation study; 'spatial': This subfolder contains the code
   and data (shapefiles of Bavaria in the subfolder 'data') to reproduce Figure 3. The raw and 
   final results (in the form of figures) are also included.
@@ -93,6 +93,13 @@ General information and contents of this Electronic Appendix:
   two further subfolders 'intermediate_results' and 'figures', where the former contains the 
   raw results and the latter contains the figures as presented in the paper and in Supplementary 
   Material 1. 
+  The subfolder 'condrift' contains a further script "real_data_analysis.R" that performs the
+  illustrative real data analysis on concept drift presented in Section 3.4.5. Moreover, it
+  contains an additional subfolder 'data' that contains the OECD data file
+  "OECD_employment_rate_data_germany.csv" used in the illustrative real data analysis. Lastly,
+  the subfolder 'results' contains an additional subfolder 'table' that contains the file 
+  "Tab2.tex", which contains the LaTeX code for Table 2 (results of illustrative real data
+  analysis).
   The subfolder 'hierpr' contains three further scripts "simulation_subset_test.R", 
   "functions_subset_test.R" and "evaluation_subset_test.R" (and the corresponding results), 
   which perform and evaluate the version of the simulation study on hierarchically structured 
@@ -113,12 +120,14 @@ Evaluation of the results:
 
 - For the evaluation of the results it is not necessary to re-perform the analyses:
 
-  The R scripts "evaluation.R" contained in the subfolders (except 'spatial') produce all 
+  The R scripts "evaluation.R" contained in the subfolders (except 'spatial') produce the 
   figures shown in the main paper and in Supplementary Material 1 as well as results that 
   support statements made in Supplementary Material 1 without the need to re-run the 
   analyses. 
   These R scripts load Rda files (stored in the subfolders "results/intermediateresults") that 
   contain the raw results.
+  In addition, the R script "real_data_analysis.R" (subfolder "concdrift") produces the
+  figure and table for the illustrative real data analysis for concept drift.
 
 - Below is a detailed description of which scripts produce which results:
 
@@ -131,13 +140,15 @@ Evaluation of the results:
     "FigureS10.pdf", "FigureS11.pdf", "FigureS12.pdf", "FigureS13.pdf", "FigureS14.pdf", 
     "FigureS15.pdf", "FigureS16.pdf"
 
+  - "concdrift/real_data_analysis.R": "Figure8.pdf", "Tab2.tex"
+
   - "concdrift/results/figures/Figure5.R": "Figure5.pdf"
 
   - "concdrift/results/figures/Figure6.R": "Figure6.pdf"
 
-  - "hierpr/evalation.R": "Figure9.pdf", "FigureS17.pdf", "FigureS18.pdf", "FigureS19.pdf"
+  - "hierpr/evaluation.R": "Figure10.pdf", "FigureS17.pdf", "FigureS18.pdf", "FigureS19.pdf"
 
-  - "nsrs/evalation.R": "Figure4.pdf"
+  - "nsrs/evaluation.R": "Figure4.pdf"
 
   - "spatial/spatial_cv_figure.R": "Figure3.pdf"
 
@@ -158,7 +169,7 @@ Full reproduction of the results:
   of the 'snow' R package in an appropriate location, preferably
   on your path. 
   See http://homepage.divms.uiowa.edu/~luke/R/cluster/cluster.html (last accessed: 
-  20th October 2023) for more details.
+  29th October 2024) for more details.
   Subsequently, you need to create sh files, each for a different of the
   above R scripts. The following is the content of an example sh file "simulation_clustdata.sh":
 
@@ -182,3 +193,12 @@ Full reproduction of the results:
   to replaced by actual numbers, the directories have to be adjusted and
   you need to specify your e-mail address; an e-mail will be sent to this address
   once the job is finished).
+
+  Note that it is possible to use other parallelization techniques (e.g., the parallel 
+  R package) than RMPISNOW to reproduce the results. This is because we use a specific 
+  seed for each line in the scenariogrid data frames created by the simulation.R scripts. 
+  Each line in these data frames correspond to one iteration in the simulation studies, 
+  respectively (see the corresponding files for details). This makes the reproducibility 
+  independent of the specific type of parallelization. However, to use a different 
+  type of parallelization than RMPINOW, it is necessary to modify the simulation.R 
+  scripts accordingly.

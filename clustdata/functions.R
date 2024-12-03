@@ -23,7 +23,7 @@ evaluatesetting <- function(iter) {
   
   # Perform simulation iteration:
   
-  result <- simulation(niter=1, N=N, ni=ni, beta=c(1, 1, -1, 0, 0), sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed)
+  result <- simulation(N=N, ni=ni, beta=c(1, 1, -1, 0, 0), sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed)
   
   # Return results:
   
@@ -90,7 +90,6 @@ simuldata <- function(N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0
 
 # Function input:
 
-# niter: number of simulation iterations
 # N: number of clusters
 # ni: number of observations per cluster
 # beta: coefficients of the variables
@@ -103,42 +102,63 @@ simuldata <- function(N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0
 
 # The MSE values estimated using standard and grouped CV.
 
-simulation <- function(niter, N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, fixed=c("none", "first", "second"))
+simulation <- function(N=50, ni=5, beta=c(1, 1, -1, 0, 0), sdbinter=0, sdbslope=0, sdeps=1, fixed=c("none", "first", "second"))
 {
   
   require("mlr3")
   require("mlr3verse")
   require("data.table")
   
-  mse_cv3_rf <- mse_cv3_lm <- numeric(niter)
-  mse_cv3g_rf <- mse_cv3g_lm <- numeric(niter)
-  
   learner_temp_rf <- lrn("regr.ranger")
   learner_temp_lm <- lrn("regr.lm")
   
   lgr::get_logger("mlr3")$set_threshold("warn")
   
-  for (i in 1:niter)
-  {
-    simuldati <- simuldata(N=N, ni=ni, beta=beta, sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed)$dataset
-    task_i <- as_task_regr(simuldati, target="y")
-    task_i$set_col_roles(cols="index", remove_from="feature")
-    cv3 <- rsmp("repeated_cv", repeats = 10, folds = 5)
-    cv3$instantiate(task_i)
-    result_cv3 <- resample(task=task_i, learner=learner_temp_rf, resampling=cv3)
-    mse_cv3_rf[i] <- result_cv3$aggregate(msr("regr.mse"))
-    result_cv3 <- resample(task=task_i, learner=learner_temp_lm, resampling=cv3)
-    mse_cv3_lm[i] <- result_cv3$aggregate(msr("regr.mse"))
-    
-    task_i$col_roles$group = "index"
-    cv3$instantiate(task_i)
-    result_cv3g <- resample(task=task_i, learner=learner_temp_rf, resampling=cv3)
-    mse_cv3g_rf[i] <- result_cv3g$aggregate(msr("regr.mse"))
-    result_cv3g <- resample(task=task_i, learner=learner_temp_lm, resampling=cv3)
-    mse_cv3g_lm[i] <- result_cv3g$aggregate(msr("regr.mse"))
-    
-  }
-  result <- list(mse_cv3_rf=mse_cv3_rf, mse_cv3_lm=mse_cv3_lm, mse_cv3g_rf=mse_cv3g_rf, mse_cv3g_lm=mse_cv3g_lm)
+  simuldati <- simuldata(N=N, ni=ni, beta=beta, sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed)$dataset
+  
+  task <- as_task_regr(simuldati, target="y")
+  task$set_col_roles(cols="index", remove_from="feature")
+  
+  
+  cv3 <- rsmp("repeated_cv", repeats = 10, folds = 5)
+  cv3$instantiate(task)
+  
+  result_cv3 <- resample(task=task, learner=learner_temp_rf, resampling=cv3)
+  mse_cv3_rf <- result_cv3$aggregate(msr("regr.mse"))
+  
+  result_cv3 <- resample(task=task, learner=learner_temp_lm, resampling=cv3)
+  mse_cv3_lm <- result_cv3$aggregate(msr("regr.mse"))
+  
+  
+  task$col_roles$group = "index"
+  cv3$instantiate(task)
+  
+  result_cv3g <- resample(task=task, learner=learner_temp_rf, resampling=cv3)
+  mse_cv3g_rf <- result_cv3g$aggregate(msr("regr.mse"))
+  
+  result_cv3g <- resample(task=task, learner=learner_temp_lm, resampling=cv3)
+  mse_cv3g_lm <- result_cv3g$aggregate(msr("regr.mse"))
+  
+  
+  train_task <- as_task_regr(simuldati, target="y")
+  train_task$set_col_roles(cols="index", remove_from="feature")
+  
+  learner_temp_rf$train(train_task)
+  learner_temp_lm$train(train_task)
+  
+  datatest <- simuldata(N=8000, ni=25, beta=beta, sdbinter=sdbinter, sdbslope=sdbslope, sdeps=sdeps, fixed=fixed)$dataset
+  
+  test_task <- as_task_regr(datatest, target = "y")
+  test_task$set_col_roles(cols="index", remove_from="feature")
+  
+  predictions <- learner_temp_rf$predict(test_task)
+  mse_true_rf <- predictions$score(msr("regr.mse"))
+  
+  predictions <- learner_temp_lm$predict(test_task)
+  mse_true_lm <- predictions$score(msr("regr.mse"))
+  
+  
+  result <- list(mse_cv3_rf=mse_cv3_rf, mse_cv3_lm=mse_cv3_lm, mse_cv3g_rf=mse_cv3g_rf, mse_cv3g_lm=mse_cv3g_lm, mse_true_rf=mse_true_rf, mse_true_lm=mse_true_lm)
   return(result)
   
 }

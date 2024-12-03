@@ -1,0 +1,18 @@
+\begin{table}[ht]
+\centering
+\caption{Real data analysis of concept drift: estimated MSE values and proxies for the true MSE values in the eighth ({\rcode{S\_1post}}) and ninth ({\rcode{S\_2post}}) seasons. {\rcode{CV1s}} and {\rcode{CV2s}} represent time-series CV without and with a buffer zone. {\rcode{OOS1s}} and {\rcode{OOS2s}} stand for out-of-sample validation without and with a buffer zone.}
+\begin{tabular}{rrrrrrr}
+  \hline
+  CV & CV1s & OOS1s & S\_1post & CV2s & OOS2s & S\_2post \\
+  \hline
+  \multicolumn{7}{c}{linear models} \\
+  \hline
+   28.2 & 38.6 & 58.6 & 49.1 & 58.2 & 75.7 & 77.2  \\
+  \hline
+  \multicolumn{7}{c}{random forests} \\
+  \hline
+    70.0 &  81.4 & 112.1 &  96.4 &  99.3 & 125.1 & 119.9  \\
+  \hline
+\end{tabular}
+\label{tab:concdriftrealdatamse}
+\end{table}

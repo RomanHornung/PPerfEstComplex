@@ -109,6 +109,11 @@ res <- resultstemplong[resultstemplong$n=="n = 500" & resultstemplong$xtrend %in
 newlabels <- levels(res$type)
 newlabels[newlabels == "E1fus_version2"] <- "E1fus"
 
+newlabels
+
+newlabels <- c("CV", "CV1s", "OOS1s", "E_last", "M_1post", 
+                "E_1post", "CV2s", "OOS2s", "E_1post", 
+                "M_2post", "E_2post")
 
 library("RColorBrewer")
 
@@ -123,7 +128,7 @@ levels(res$predmethod) <- c("linear models", "random forests")
 library("ggplot2")
 
 p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
-  geom_boxplot() + facet_wrap(~ predmethod + xtrend + ytrend, ncol = 4, scales="free_y") +
+  geom_boxplot() + facet_wrap(~ xtrend + ytrend + predmethod, ncol = 2, scales="free_y") +
   theme(axis.title.x=element_blank(), 
         axis.title.y=element_text(size=17), 
         axis.text.x = element_text(angle=45, hjust = 1, color="black", size=15), 
@@ -131,10 +136,12 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
         strip.text = element_text(size=17),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
-  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5) +
+  annotate("text", x = 1-0.7, y = Inf, label = "no buffer", vjust = 1.3, hjust = -0.1, size = 6) +
+  annotate("text", x = 7.5-1, y = Inf, label = "buffer", vjust = 1.3, hjust = -0.1, size = 6)
 p
 
-ggsave("./concdrift/results/figures/Figure7.pdf", width=13.5, height=7)
+ggsave("./concdrift/results/figures/Figure7.pdf", width=12, height=13.5)
 
 
 
@@ -151,12 +158,14 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ n + ytrend, ncol = 4, scales="free_y") +
   theme(axis.title.x=element_blank(), 
         axis.title.y=element_text(size=14), 
-        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         axis.text.y = element_text(color="black", size=11), 
         strip.text = element_text(size=12),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
-  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5) +
+  annotate("text", x = 1-0.7, y = Inf, label = "no buffer", vjust = 1.3, hjust = -0.1, size = 4.3) +
+  annotate("text", x = 7.5-1, y = Inf, label = "buffer", vjust = 1.3, hjust = -0.1, size = 4.3)
 p
 
 ggsave("./concdrift/results/figures/FigureS9.pdf", width=11, height=9)
@@ -172,12 +181,14 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ n + ytrend, ncol = 4, scales="free_y") +
   theme(axis.title.x=element_blank(), 
         axis.title.y=element_text(size=14), 
-        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         axis.text.y = element_text(color="black", size=11), 
         strip.text = element_text(size=12),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
-  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5) +
+  annotate("text", x = 1-0.7, y = Inf, label = "no buffer", vjust = 1.3, hjust = -0.1, size = 4.3) +
+  annotate("text", x = 7.5-1, y = Inf, label = "buffer", vjust = 1.3, hjust = -0.1, size = 4.3)
 p
 
 ggsave("./concdrift/results/figures/FigureS10.pdf", width=11, height=9)
@@ -193,12 +204,14 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ n + ytrend, ncol = 4, scales="free_y") +
   theme(axis.title.x=element_blank(), 
         axis.title.y=element_text(size=14), 
-        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         axis.text.y = element_text(color="black", size=11), 
         strip.text = element_text(size=12),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
-  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5) +
+  annotate("text", x = 1-0.7, y = Inf, label = "no buffer", vjust = 1.3, hjust = -0.1, size = 4.3) +
+  annotate("text", x = 7.5-1, y = Inf, label = "buffer", vjust = 1.3, hjust = -0.1, size = 4.3)
 p
 
 ggsave("./concdrift/results/figures/FigureS11.pdf", width=11, height=9)
@@ -214,12 +227,14 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ n + ytrend, ncol = 4, scales="free_y") +
   theme(axis.title.x=element_blank(), 
         axis.title.y=element_text(size=14), 
-        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         axis.text.y = element_text(color="black", size=11), 
         strip.text = element_text(size=12),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
-  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5) +
+  annotate("text", x = 1-0.7, y = Inf, label = "no buffer", vjust = 1.3, hjust = -0.1, size = 4.3) +
+  annotate("text", x = 7.5-1, y = Inf, label = "buffer", vjust = 1.3, hjust = -0.1, size = 4.3)
 p
 
 ggsave("./concdrift/results/figures/FigureS12.pdf", width=11, height=9)
@@ -237,20 +252,19 @@ ggsave("./concdrift/results/figures/FigureS12.pdf", width=11, height=9)
 
 res <- resultstemplong[resultstemplong$predmethod=="rf" & resultstemplong$xtrend=="no covariate shift",]
 
-newlabels <- levels(res$type)
-newlabels[newlabels == "E1fus_version2"] <- "E1fus"
-
 library("ggplot2")
 p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ n + ytrend, ncol = 4, scales="free_y") +
   theme(axis.title.x=element_blank(), 
         axis.title.y=element_text(size=14), 
-        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         axis.text.y = element_text(color="black", size=11), 
         strip.text = element_text(size=12),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
-  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5) +
+  annotate("text", x = 1-0.7, y = Inf, label = "no buffer", vjust = 1.3, hjust = -0.1, size = 4.3) +
+  annotate("text", x = 7.5-1, y = Inf, label = "buffer", vjust = 1.3, hjust = -0.1, size = 4.3)
 p
 
 ggsave("./concdrift/results/figures/FigureS13.pdf", width=11, height=9)
@@ -266,12 +280,14 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ n + ytrend, ncol = 4, scales="free_y") +
   theme(axis.title.x=element_blank(), 
         axis.title.y=element_text(size=14), 
-        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         axis.text.y = element_text(color="black", size=11), 
         strip.text = element_text(size=12),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
-  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5) +
+  annotate("text", x = 1-0.7, y = Inf, label = "no buffer", vjust = 1.3, hjust = -0.1, size = 4.3) +
+  annotate("text", x = 7.5-1, y = Inf, label = "buffer", vjust = 1.3, hjust = -0.1, size = 4.3)
 p
 
 ggsave("./concdrift/results/figures/FigureS14.pdf", width=11, height=9)
@@ -287,12 +303,14 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ n + ytrend, ncol = 4, scales="free_y") +
   theme(axis.title.x=element_blank(), 
         axis.title.y=element_text(size=14), 
-        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         axis.text.y = element_text(color="black", size=11), 
         strip.text = element_text(size=12),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
-  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5) +
+  annotate("text", x = 1-0.7, y = Inf, label = "no buffer", vjust = 1.3, hjust = -0.1, size = 4.3) +
+  annotate("text", x = 7.5-1, y = Inf, label = "buffer", vjust = 1.3, hjust = -0.1, size = 4.3)
 p
 
 ggsave("./concdrift/results/figures/FigureS15.pdf", width=11, height=9)
@@ -308,12 +326,14 @@ p <- ggplot(data=res, aes(x=type, y=mse, fill=type)) + theme_bw() +
   geom_boxplot() + facet_wrap(~ n + ytrend, ncol = 4, scales="free_y") +
   theme(axis.title.x=element_blank(), 
         axis.title.y=element_text(size=14), 
-        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=12), 
+        axis.text.x = element_text(angle=45, hjust = 1, color="black", size=10), 
         axis.text.y = element_text(color="black", size=11), 
         strip.text = element_text(size=12),
         legend.position = "none") + ylab("Estimated and true MSE values") +
   scale_fill_manual(values = c(rep(selectedColors[1], 3), rep(selectedColors[2], 3), rep(selectedColors[1], 2), rep(selectedColors[2], 3))) +
-  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5)
+  scale_x_discrete(labels = newlabels) + geom_vline(xintercept = 6.5) +
+  annotate("text", x = 1-0.7, y = Inf, label = "no buffer", vjust = 1.3, hjust = -0.1, size = 4.3) +
+  annotate("text", x = 7.5-1, y = Inf, label = "buffer", vjust = 1.3, hjust = -0.1, size = 4.3)
 p
 
 ggsave("./concdrift/results/figures/FigureS16.pdf", width=11, height=9)
@@ -760,3 +780,4 @@ cor(sapply(seq(seasonbreaks[1], seasonbreaks[9], length=n), function(t) getcoef(
 # If two variables (in this case the intercept and the rest of the linear predictor)
 # have a negative association, the variance of their sum gets smaller compared to when they
 # do not have a negative association.
+

@@ -139,7 +139,7 @@ ggsave("./hierpr/results/figures/FigureS19.pdf", width=9, height=9)
 
 
 
-# Fig. 9: Simulation on hierarchical classification: differences between estimated 
+# Fig. 10: Simulation on hierarchical classification: differences between estimated 
 # and true evaluation metric values divided by true values.
 
 resultstemp <- results[results$type %in% c("CV_percdiff", "stratCV_percdiff"),]
@@ -162,7 +162,7 @@ p <- ggplot(data=resultstemp, aes(x=n, y=value, fill=type)) + theme_bw() +
         legend.position = "none")
 p
 
-ggsave("./hierpr/results/figures/Figure9.pdf", width=10, height=8)
+ggsave("./hierpr/results/figures/Figure10.pdf", width=10, height=8)
 
 
 
@@ -462,3 +462,72 @@ tempdf12$predperobs <- tempdf12$npred/tempdf12$ntrain
 
 # Statement: "... random forests in particular, have a strong tendency towards predicting larger classes ..."
 plot(tempdf12$ntrain, tempdf12$predperobs, main=paste0("Cor: ", round(cor(tempdf12$ntrain, tempdf12$predperobs, method="spearman"), 2)))
+
+
+
+
+
+
+set.seed(1234)
+
+n_classes <- list()
+
+
+n_classes[[1]] <- 0
+
+for(i in 1:100) {
+  
+  coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                             sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
+  
+  datatrain <- sim_data(n=200, coeflist=coeflist)
+  
+  n_classes[[1]][i] <- length(unique(datatrain$y))
+  
+}
+
+
+n_classes[[2]] <- 0
+
+for(i in 1:100) {
+  
+  coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                             sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
+  
+  datatrain <- sim_data(n=500, coeflist=coeflist)
+  
+  n_classes[[2]][i] <- length(unique(datatrain$y))
+  
+}
+
+
+n_classes[[3]] <- 0
+
+for(i in 1:100) {
+  
+  coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                             sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
+  
+  datatrain <- sim_data(n=1000, coeflist=coeflist)
+  
+  n_classes[[3]][i] <- length(unique(datatrain$y))
+  
+}
+
+
+n_classes[[4]] <- 0
+
+for(i in 1:100) {
+  
+  coeflist <- simulate_coefs(treestruc=treestruc, sdbeta0=sqrt(1),
+                             sdbeta=sqrt(c(2.5, 2, 0.9, 0.7, 0.5)))
+  
+  datatrain <- sim_data(n=3000, coeflist=coeflist)
+  
+  n_classes[[4]][i] <- length(unique(datatrain$y))
+  
+}
+
+
+# Statement: "As the sample size increased, a greater number of small classes were included in the training data sets."
+boxplot(n_classes)
