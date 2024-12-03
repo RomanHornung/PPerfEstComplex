@@ -3,8 +3,8 @@
 Supplementary Material 2 - Electronic Appendix to the 
 article "Evaluating Machine Learning Models in Non-Standard Settings: An Overview 
 and New Findings" by Roman Hornung*,1,2, Malte Nalenz 3, Lennart Schneider 3,2, 
-Andreas  Bender 3,2, Ludwig Bothmann 3,2, Bernd Bischl 3,2, Thomas Augustin 3, 
-Anne-Laure Boulesteix 1,2
+Andreas  Bender 3,2, Ludwig Bothmann 3,2, Florian Dumpert 4, Bernd Bischl 3,2, 
+Thomas Augustin 3, Anne-Laure Boulesteix 1,2
 
 1 Institute for Medical Information Processing, Biometry and Epidemiology, 
   LMU Munich, Munich, Germany
@@ -12,6 +12,8 @@ Anne-Laure Boulesteix 1,2
 2 Munich Center for Machine Learning (MCML), Munich, Germany
 
 3 Department of Statistics, LMU Munich, Munich, Germany
+
+4 Federal Statistical Office of Germany, Wiesbaden, Germany
 
 * For questions, please contact: hornung@ibe.med.uni-muenchen.de
 
